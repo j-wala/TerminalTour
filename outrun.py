@@ -56,6 +56,8 @@ class OutRunGame:
         self.level_names = ["BEACH", "CITY", "FACTORY"]
         self.level_transition_message = ""
         self.level_transition_timer = 0
+        self.sky_objects = []
+        self.environmental_objects = []
         
         self.init_music()
         
@@ -108,6 +110,108 @@ class OutRunGame:
         progress = row / (self.height - 2)
         curve_effect = self.curve * progress * 30
         return int(curve_effect)
+    
+    def draw_sky(self):
+        sky_height = min(15, self.height // 3)
+        
+        if self.current_level == 0:
+            for row in range(sky_height):
+                for col in range(self.width):
+                    try:
+                        self.stdscr.addch(row, col, ' ', curses.color_pair(4) | curses.A_DIM)
+                    except:
+                        pass
+            
+            if len(self.sky_objects) == 0:
+                sun_x = self.width - 15
+                sun_y = 3
+                self.sky_objects.append({'type': 'sun', 'x': sun_x, 'y': sun_y})
+                
+                for _ in range(3):
+                    cloud_x = random.randint(10, self.width - 20)
+                    cloud_y = random.randint(2, sky_height - 3)
+                    self.sky_objects.append({'type': 'cloud', 'x': cloud_x, 'y': cloud_y, 'offset': random.randint(0, 50)})
+            
+            for obj in self.sky_objects:
+                if obj['type'] == 'sun':
+                    sun_art = [
+                        "  \\|/  ",
+                        " -(@)- ",
+                        "  /|\\  "
+                    ]
+                    for i, line in enumerate(sun_art):
+                        for j, ch in enumerate(line):
+                            x = obj['x'] + j
+                            y = obj['y'] + i
+                            if 0 <= x < self.width and 0 <= y < sky_height:
+                                try:
+                                    self.stdscr.addch(y, x, ch, curses.color_pair(2) | curses.A_BOLD)
+                                except:
+                                    pass
+                
+                elif obj['type'] == 'cloud':
+                    obj['offset'] = (obj['offset'] + 0.1) % self.width
+                    cloud_x = int(obj['x'] + obj['offset']) % self.width
+                    cloud_art = "  .--.  "
+                    for j, ch in enumerate(cloud_art):
+                        x = cloud_x + j
+                        if 0 <= x < self.width and 0 <= obj['y'] < sky_height:
+                            try:
+                                self.stdscr.addch(obj['y'], x, ch, curses.color_pair(6))
+                            except:
+                                pass
+        
+        elif self.current_level == 1:
+            for row in range(sky_height):
+                for col in range(self.width):
+                    try:
+                        self.stdscr.addch(row, col, ' ', curses.color_pair(7) | curses.A_DIM)
+                    except:
+                        pass
+            
+            if len(self.sky_objects) == 0:
+                for _ in range(5):
+                    cloud_x = random.randint(5, self.width - 15)
+                    cloud_y = random.randint(2, sky_height - 2)
+                    self.sky_objects.append({'type': 'cloud', 'x': cloud_x, 'y': cloud_y, 'offset': random.randint(0, 50)})
+            
+            for obj in self.sky_objects:
+                if obj['type'] == 'cloud':
+                    obj['offset'] = (obj['offset'] + 0.15) % self.width
+                    cloud_x = int(obj['x'] + obj['offset']) % self.width
+                    cloud_art = " .--. "
+                    for j, ch in enumerate(cloud_art):
+                        x = cloud_x + j
+                        if 0 <= x < self.width and 0 <= obj['y'] < sky_height:
+                            try:
+                                self.stdscr.addch(obj['y'], x, ch, curses.color_pair(6) | curses.A_DIM)
+                            except:
+                                pass
+        
+        else:
+            for row in range(sky_height):
+                for col in range(self.width):
+                    try:
+                        self.stdscr.addch(row, col, ' ', curses.color_pair(1) | curses.A_DIM)
+                    except:
+                        pass
+            
+            if len(self.sky_objects) == 0:
+                for _ in range(8):
+                    smoke_x = random.randint(10, self.width - 10)
+                    smoke_y = random.randint(3, sky_height - 1)
+                    self.sky_objects.append({'type': 'smoke', 'x': smoke_x, 'y': smoke_y, 'offset': 0})
+            
+            for obj in self.sky_objects:
+                if obj['type'] == 'smoke':
+                    obj['offset'] = (obj['offset'] + 0.3) % 10
+                    smoke_chars = ['~', '≈', '∼']
+                    char = smoke_chars[int(obj['offset']) % len(smoke_chars)]
+                    if 0 <= obj['x'] < self.width and 0 <= obj['y'] < sky_height:
+                        try:
+                            self.stdscr.addch(obj['y'], obj['x'], char, curses.color_pair(6) | curses.A_DIM)
+                        except:
+                            pass
     
     def draw_road(self):
         road_width_top = 20
@@ -175,13 +279,28 @@ class OutRunGame:
             self.current_level = new_level
             self.level_transition_message = f"ENTERING {self.level_names[new_level]} ZONE!"
             self.level_transition_timer = 100
+            self.sky_objects = []
+            self.tree_positions = []
     
     def spawn_scenery(self):
-        if len(self.tree_positions) < 20:
-            if random.random() < 0.3:
+        if len(self.tree_positions) < 25:
+            if random.random() < 0.35:
                 side = random.choice(['left', 'right'])
                 scenery_y = -5
-                self.tree_positions.append({'side': side, 'y': scenery_y, 'type': self.current_level})
+                
+                if self.current_level == 0:
+                    scenery_type = random.choice(['palm', 'umbrella', 'rock'])
+                elif self.current_level == 1:
+                    scenery_type = random.choice(['building', 'lamp', 'sign'])
+                else:
+                    scenery_type = random.choice(['smokestack', 'tank', 'pipe'])
+                
+                self.tree_positions.append({
+                    'side': side, 
+                    'y': scenery_y, 
+                    'type': self.current_level,
+                    'subtype': scenery_type
+                })
     
     def update_scenery(self):
         for item in self.tree_positions[:]:
@@ -191,37 +310,27 @@ class OutRunGame:
                 self.tree_positions.remove(item)
     
     def draw_scenery(self):
-        beach_art = [
-            "  Y  ",
-            " /|\ ",
-            "//|\\\\" 
-        ]
-        
-        city_art = [
-            "[##]",
-            "[##]",
-            "[##]"
-        ]
-        
-        factory_art = [
-            " ≈≈ ",
-            "[##]",
-            "[##]"
-        ]
+        scenery_defs = {
+            'palm': (["  Y  ", " /|\ ", "//|\\\\"], curses.color_pair(3)),
+            'umbrella': ([" _|_ ", "(___)", "  |  "], curses.color_pair(2)),
+            'rock': ([" ___ ", "/   \\", "\\___/"], curses.color_pair(6) | curses.A_DIM),
+            'building': (["[##]", "[##]", "[##]"], curses.color_pair(6)),
+            'lamp': ([" O ", " | ", " | "], curses.color_pair(2) | curses.A_BOLD),
+            'sign': (["###", "[>]", " | "], curses.color_pair(3)),
+            'smokestack': ([" ≈≈ ", "[##]", "[##]"], curses.color_pair(1) | curses.A_DIM),
+            'tank': ([" __ ", "[__]", "[__]"], curses.color_pair(6) | curses.A_DIM),
+            'pipe': (["]===", "]===", "]==="], curses.color_pair(1))
+        }
         
         for item in self.tree_positions:
             row_base = int(item['y'])
-            level_type = item.get('type', 0)
+            subtype = item.get('subtype', 'palm')
             
-            if level_type == 0:
-                art = beach_art
-                color = curses.color_pair(3)
-            elif level_type == 1:
-                art = city_art
-                color = curses.color_pair(6)
+            if subtype in scenery_defs:
+                art, color = scenery_defs[subtype]
             else:
-                art = factory_art
-                color = curses.color_pair(1) | curses.A_DIM
+                art = ["  ?  ", "  ?  ", "  ?  "]
+                color = curses.color_pair(6)
             
             if 0 <= row_base < self.height - 5:
                 progress = row_base / (self.height - 2)
@@ -502,6 +611,8 @@ class OutRunGame:
         self.current_level = 0
         self.level_transition_message = ""
         self.level_transition_timer = 0
+        self.sky_objects = []
+        self.environmental_objects = []
     
     def run(self):
         self.draw_title_screen()
@@ -522,6 +633,7 @@ class OutRunGame:
                 self.update_curve()
                 self.check_level_transition()
                 
+                self.draw_sky()
                 self.draw_road()
                 self.spawn_scenery()
                 self.update_scenery()
