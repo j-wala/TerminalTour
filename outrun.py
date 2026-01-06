@@ -1,6 +1,8 @@
 import curses
 import random
 import time
+import pygame
+import threading
 from dataclasses import dataclass
 from typing import List, Tuple
 
@@ -26,7 +28,7 @@ class OutRunGame:
         
         curses.curs_set(0)
         stdscr.nodelay(1)
-        stdscr.timeout(50)
+        stdscr.timeout(0)
         
         curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
         curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
@@ -46,7 +48,55 @@ class OutRunGame:
         self.curve = 0.0
         self.curve_target = 0.0
         self.curve_change_timer = 0
+        self.tree_positions = []
+        self.tree_offset = 0
         
+        self.init_music()
+        
+    def init_music(self):
+        try:
+            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            self.generate_music()
+        except:
+            pass
+    
+    def generate_music(self):
+        try:
+            import numpy as np
+            
+            duration = 4.0
+            sample_rate = 22050
+            
+            def generate_square_wave(freq, duration, sample_rate):
+                t = np.linspace(0, duration, int(sample_rate * duration))
+                wave = np.sign(np.sin(2 * np.pi * freq * t))
+                return (wave * 16384).astype(np.int16)
+            
+            melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
+            bass_notes = [262, 330, 262, 330, 262, 196, 262, 330]
+            
+            note_duration = duration / len(melody_notes)
+            
+            melody = np.array([], dtype=np.int16)
+            bass = np.array([], dtype=np.int16)
+            
+            for i in range(len(melody_notes)):
+                melody = np.concatenate([melody, generate_square_wave(melody_notes[i], note_duration, sample_rate)])
+                bass = np.concatenate([bass, generate_square_wave(bass_notes[i], note_duration, sample_rate)])
+            
+            combined = np.stack([melody + bass * 0.5, melody + bass * 0.5], axis=1)
+            sound = pygame.sndarray.make_sound(combined.astype(np.int16))
+            
+            def play_loop():
+                while True:
+                    sound.play()
+                    time.sleep(duration)
+            
+            music_thread = threading.Thread(target=play_loop, daemon=True)
+            music_thread.start()
+        except:
+            pass
+    
     def get_curve_offset(self, row: int) -> int:
         progress = row / (self.height - 2)
         curve_effect = self.curve * progress * 30
@@ -103,6 +153,58 @@ class OutRunGame:
                             self.stdscr.addch(row, dash_col, '-', curses.color_pair(2))
                         except:
                             pass
+    
+    def spawn_trees(self):
+        if len(self.tree_positions) < 20:
+            if random.random() < 0.3:
+                side = random.choice(['left', 'right'])
+                tree_y = -5
+                self.tree_positions.append({'side': side, 'y': tree_y})
+    
+    def update_trees(self):
+        for tree in self.tree_positions[:]:
+            tree['y'] += self.speed + 1
+            
+            if tree['y'] > self.height:
+                self.tree_positions.remove(tree)
+    
+    def draw_trees(self):
+        tree_art = [
+            "  ^  ",
+            " /|\ ",
+            "//|\\\\" 
+        ]
+        
+        for tree in self.tree_positions:
+            row_base = int(tree['y'])
+            
+            if 0 <= row_base < self.height - 5:
+                progress = row_base / (self.height - 2)
+                curve_offset = self.get_curve_offset(row_base)
+                
+                road_width = int(20 + (60 - 20) * progress)
+                center = self.width // 2 + curve_offset
+                
+                if tree['side'] == 'left':
+                    tree_x = center - road_width // 2 - 8
+                else:
+                    tree_x = center + road_width // 2 + 3
+                
+                scale = 0.3 + progress * 0.7
+                
+                for i, line in enumerate(tree_art):
+                    row = row_base + int(i * scale)
+                    if 0 <= row < self.height - 1:
+                        scaled_line = line if scale > 0.6 else line[1:-1]
+                        col = tree_x
+                        
+                        for j, ch in enumerate(scaled_line):
+                            c = col + j
+                            if 0 <= c < self.width and ch != ' ':
+                                try:
+                                    self.stdscr.addch(row, c, ch, curses.color_pair(3))
+                                except:
+                                    pass
     
     def draw_car(self, x: int, y: int, color_pair: int):
         car_art = [
@@ -324,12 +426,18 @@ class OutRunGame:
         self.curve = 0.0
         self.curve_target = 0.0
         self.curve_change_timer = 100
+        self.tree_positions = []
+        self.tree_offset = 0
     
     def run(self):
         self.draw_title_screen()
         
+        frame_time = 0.05
+        
         while True:
             if not self.game_over:
+                frame_start = time.time()
+                
                 self.stdscr.clear()
                 
                 self.road_offset += self.speed
@@ -340,6 +448,9 @@ class OutRunGame:
                 self.update_curve()
                 
                 self.draw_road()
+                self.spawn_trees()
+                self.update_trees()
+                self.draw_trees()
                 self.spawn_traffic()
                 self.update_traffic()
                 self.draw_traffic()
@@ -353,6 +464,11 @@ class OutRunGame:
                     break
                 
                 self.stdscr.refresh()
+                
+                frame_elapsed = time.time() - frame_start
+                sleep_time = frame_time - frame_elapsed
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
                 
             else:
                 self.draw_game_over()
