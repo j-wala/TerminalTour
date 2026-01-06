@@ -1,0 +1,374 @@
+import curses
+import random
+import time
+from dataclasses import dataclass
+from typing import List, Tuple
+
+@dataclass
+class Car:
+    x: float
+    y: float
+    width: int = 5
+    height: int = 3
+    
+@dataclass
+class TrafficCar:
+    x: float
+    y: float
+    speed: float
+    width: int = 5
+    height: int = 3
+
+class OutRunGame:
+    def __init__(self, stdscr):
+        self.stdscr = stdscr
+        self.height, self.width = stdscr.getmaxyx()
+        
+        curses.curs_set(0)
+        stdscr.nodelay(1)
+        stdscr.timeout(50)
+        
+        curses.init_pair(1, curses.COLOR_RED, curses.COLOR_BLACK)
+        curses.init_pair(2, curses.COLOR_YELLOW, curses.COLOR_BLACK)
+        curses.init_pair(3, curses.COLOR_GREEN, curses.COLOR_BLACK)
+        curses.init_pair(4, curses.COLOR_CYAN, curses.COLOR_BLACK)
+        curses.init_pair(5, curses.COLOR_MAGENTA, curses.COLOR_BLACK)
+        curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)
+        curses.init_pair(7, curses.COLOR_BLUE, curses.COLOR_BLACK)
+        
+        self.player = Car(x=self.width // 2, y=self.height - 6)
+        self.traffic: List[TrafficCar] = []
+        self.road_offset = 0
+        self.speed = 1.0
+        self.score = 0
+        self.game_over = False
+        self.distance = 0
+        self.curve = 0.0
+        self.curve_target = 0.0
+        self.curve_change_timer = 0
+        
+    def get_curve_offset(self, row: int) -> int:
+        progress = row / (self.height - 2)
+        curve_effect = self.curve * progress * 30
+        return int(curve_effect)
+    
+    def draw_road(self):
+        road_width_top = 20
+        road_width_bottom = 60
+        
+        for row in range(self.height - 2):
+            progress = row / (self.height - 2)
+            road_width = int(road_width_top + (road_width_bottom - road_width_top) * progress)
+            
+            curve_offset = self.get_curve_offset(row)
+            center = self.width // 2 + curve_offset
+            left_edge = center - road_width // 2
+            right_edge = center + road_width // 2
+            
+            segment_height = 3
+            segment_index = int((row + self.road_offset) / segment_height) % 2
+            
+            if segment_index == 0:
+                road_color = curses.color_pair(6)
+            else:
+                road_color = curses.color_pair(6) | curses.A_DIM
+                
+            for col in range(max(0, left_edge), min(self.width, right_edge)):
+                try:
+                    self.stdscr.addch(row, col, ' ', road_color | curses.A_REVERSE)
+                except:
+                    pass
+                    
+            left_line_col = left_edge - 1
+            if 0 <= left_line_col < self.width:
+                try:
+                    if segment_index == 0:
+                        self.stdscr.addch(row, left_line_col, '|', curses.color_pair(1))
+                except:
+                    pass
+                    
+            right_line_col = right_edge
+            if 0 <= right_line_col < self.width:
+                try:
+                    if segment_index == 0:
+                        self.stdscr.addch(row, right_line_col, '|', curses.color_pair(1))
+                except:
+                    pass
+                    
+            if row % segment_height == 0:
+                dash_positions = [center - 2, center + 2]
+                for dash_col in dash_positions:
+                    if left_edge < dash_col < right_edge:
+                        try:
+                            self.stdscr.addch(row, dash_col, '-', curses.color_pair(2))
+                        except:
+                            pass
+    
+    def draw_car(self, x: int, y: int, color_pair: int):
+        car_art = [
+            " _=_ ",
+            "[###]",
+            " | | "
+        ]
+        
+        for i, line in enumerate(car_art):
+            row = int(y) + i
+            col = int(x) - len(line) // 2
+            if 0 <= row < self.height:
+                for j, ch in enumerate(line):
+                    c = col + j
+                    if 0 <= c < self.width and ch != ' ':
+                        try:
+                            self.stdscr.addch(row, c, ch, curses.color_pair(color_pair) | curses.A_BOLD)
+                        except:
+                            pass
+    
+    def draw_player(self):
+        self.draw_car(int(self.player.x), int(self.player.y), 4)
+        
+    def draw_traffic(self):
+        for car in self.traffic:
+            self.draw_car(int(car.x), int(car.y), 1)
+    
+    def draw_hud(self):
+        try:
+            speed_text = f"SPEED: {int(self.speed * 100)} km/h"
+            self.stdscr.addstr(self.height - 1, 2, speed_text, curses.color_pair(2) | curses.A_BOLD)
+            
+            score_text = f"SCORE: {self.score}"
+            self.stdscr.addstr(self.height - 1, self.width - len(score_text) - 2, score_text, curses.color_pair(3) | curses.A_BOLD)
+            
+            dist_text = f"DISTANCE: {int(self.distance)}m"
+            self.stdscr.addstr(self.height - 1, self.width // 2 - len(dist_text) // 2, dist_text, curses.color_pair(5) | curses.A_BOLD)
+        except:
+            pass
+    
+    def spawn_traffic(self):
+        if random.random() < 0.02 + self.speed * 0.01:
+            road_width_top = 20
+            curve_offset = self.get_curve_offset(0)
+            center = self.width // 2 + curve_offset
+            x_offset = random.randint(-road_width_top // 3, road_width_top // 3)
+            x = center + x_offset
+            
+            self.traffic.append(TrafficCar(
+                x=x,
+                y=-3,
+                speed=self.speed * random.uniform(0.3, 0.7)
+            ))
+    
+    def update_traffic(self):
+        for car in self.traffic[:]:
+            car.y += self.speed + 1 - car.speed
+            
+            old_curve_offset = self.get_curve_offset(int(car.y - (self.speed + 1 - car.speed)))
+            new_curve_offset = self.get_curve_offset(int(car.y))
+            car.x += (new_curve_offset - old_curve_offset)
+            
+            if car.y > self.height:
+                self.traffic.remove(car)
+                self.score += 10
+    
+    def check_collision(self) -> bool:
+        px, py = int(self.player.x), int(self.player.y)
+        
+        for car in self.traffic:
+            cx, cy = int(car.x), int(car.y)
+            
+            if abs(px - cx) < 5 and abs(py - cy) < 3:
+                return True
+                
+        road_width_bottom = 60
+        curve_offset = self.get_curve_offset(int(self.player.y))
+        center = self.width // 2 + curve_offset
+        left_edge = center - road_width_bottom // 2
+        right_edge = center + road_width_bottom // 2
+        
+        if px - 2 < left_edge or px + 2 > right_edge:
+            return True
+            
+        return False
+    
+    def handle_input(self):
+        try:
+            key = self.stdscr.getch()
+            
+            if key == ord('q'):
+                return False
+                
+            if key == curses.KEY_LEFT or key == ord('a'):
+                self.player.x -= 2
+                
+            if key == curses.KEY_RIGHT or key == ord('d'):
+                self.player.x += 2
+                
+            if key == curses.KEY_UP or key == ord('w'):
+                self.speed = min(3.0, self.speed + 0.1)
+                
+            if key == curses.KEY_DOWN or key == ord('s'):
+                self.speed = max(0.5, self.speed - 0.1)
+                
+        except:
+            pass
+            
+        return True
+    
+    def draw_title_screen(self):
+        self.stdscr.clear()
+        
+        title = [
+            "   ___  __  __________ __  ___   __",
+            "  / _ \\/ / / /_  __/ _ \\ / / / | / /",
+            " / // / /_/ / / / / , _/ /_/ /  |/ /",
+            "/____/\\____/ /_/ /_/|_|\\____/_/|___/"
+        ]
+        
+        start_y = self.height // 2 - len(title) - 5
+        for i, line in enumerate(title):
+            x = self.width // 2 - len(line) // 2
+            if x >= 0 and start_y + i >= 0:
+                try:
+                    self.stdscr.addstr(start_y + i, x, line, curses.color_pair(5) | curses.A_BOLD)
+                except:
+                    pass
+        
+        subtitle = "ASCII RACING GAME"
+        try:
+            self.stdscr.addstr(start_y + len(title) + 2, self.width // 2 - len(subtitle) // 2, 
+                             subtitle, curses.color_pair(2) | curses.A_BOLD)
+        except:
+            pass
+            
+        instructions = [
+            "CONTROLS:",
+            "Arrow Keys / WASD - Move & Speed",
+            "Q - Quit",
+            "",
+            "Press any key to start..."
+        ]
+        
+        inst_y = start_y + len(title) + 5
+        for i, line in enumerate(instructions):
+            x = self.width // 2 - len(line) // 2
+            try:
+                color = curses.color_pair(4) if i == 0 else curses.color_pair(6)
+                self.stdscr.addstr(inst_y + i, x, line, color)
+            except:
+                pass
+        
+        self.stdscr.refresh()
+        self.stdscr.nodelay(0)
+        self.stdscr.getch()
+        self.stdscr.nodelay(1)
+    
+    def draw_game_over(self):
+        self.stdscr.clear()
+        
+        game_over_text = [
+            "  ___   _   __  __ ___    _____   _______ ___ ",
+            " / __| /_\\ |  \\/  | __|  / _ \\ \\ / / __| _ \\",
+            "| (_ |/ _ \\| |\\/| | _|  | (_) \\ V /| _||   /",
+            " \\___/_/ \\_\\_|  |_|___|  \\___/ \\_/ |___|_|_\\"
+        ]
+        
+        start_y = self.height // 2 - len(game_over_text) - 5
+        for i, line in enumerate(game_over_text):
+            x = self.width // 2 - len(line) // 2
+            if x >= 0 and start_y + i >= 0:
+                try:
+                    self.stdscr.addstr(start_y + i, x, line, curses.color_pair(1) | curses.A_BOLD)
+                except:
+                    pass
+        
+        final_score = f"FINAL SCORE: {self.score}"
+        final_dist = f"DISTANCE: {int(self.distance)}m"
+        
+        try:
+            self.stdscr.addstr(start_y + len(game_over_text) + 2, 
+                             self.width // 2 - len(final_score) // 2, 
+                             final_score, curses.color_pair(3) | curses.A_BOLD)
+            self.stdscr.addstr(start_y + len(game_over_text) + 3, 
+                             self.width // 2 - len(final_dist) // 2, 
+                             final_dist, curses.color_pair(5) | curses.A_BOLD)
+        except:
+            pass
+        
+        restart_text = "Press R to restart or Q to quit"
+        try:
+            self.stdscr.addstr(start_y + len(game_over_text) + 6, 
+                             self.width // 2 - len(restart_text) // 2, 
+                             restart_text, curses.color_pair(6))
+        except:
+            pass
+        
+        self.stdscr.refresh()
+    
+    def update_curve(self):
+        self.curve_change_timer -= 1
+        
+        if self.curve_change_timer <= 0:
+            self.curve_target = random.uniform(-1.0, 1.0)
+            self.curve_change_timer = random.randint(100, 300)
+        
+        curve_diff = self.curve_target - self.curve
+        self.curve += curve_diff * 0.02
+    
+    def reset_game(self):
+        self.player = Car(x=self.width // 2, y=self.height - 6)
+        self.traffic = []
+        self.road_offset = 0
+        self.speed = 1.0
+        self.score = 0
+        self.game_over = False
+        self.distance = 0
+        self.curve = 0.0
+        self.curve_target = 0.0
+        self.curve_change_timer = 100
+    
+    def run(self):
+        self.draw_title_screen()
+        
+        while True:
+            if not self.game_over:
+                self.stdscr.clear()
+                
+                self.road_offset += self.speed
+                if self.road_offset >= 6:
+                    self.road_offset = 0
+                
+                self.distance += self.speed * 0.5
+                self.update_curve()
+                
+                self.draw_road()
+                self.spawn_traffic()
+                self.update_traffic()
+                self.draw_traffic()
+                self.draw_player()
+                self.draw_hud()
+                
+                if self.check_collision():
+                    self.game_over = True
+                
+                if not self.handle_input():
+                    break
+                
+                self.stdscr.refresh()
+                
+            else:
+                self.draw_game_over()
+                
+                try:
+                    key = self.stdscr.getch()
+                    if key == ord('r') or key == ord('R'):
+                        self.reset_game()
+                    elif key == ord('q') or key == ord('Q'):
+                        break
+                except:
+                    pass
+
+def main(stdscr):
+    game = OutRunGame(stdscr)
+    game.run()
+
+if __name__ == "__main__":
+    curses.wrapper(main)
