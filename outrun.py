@@ -52,6 +52,10 @@ class OutRunGame:
         self.tree_offset = 0
         self.music_enabled = True
         self.sound = None
+        self.current_level = 0
+        self.level_names = ["BEACH", "CITY", "FACTORY"]
+        self.level_transition_message = ""
+        self.level_transition_timer = 0
         
         self.init_music()
         
@@ -157,29 +161,67 @@ class OutRunGame:
                         except:
                             pass
     
-    def spawn_trees(self):
+    def get_current_level(self):
+        if self.distance < 500:
+            return 0
+        elif self.distance < 1000:
+            return 1
+        else:
+            return 2
+    
+    def check_level_transition(self):
+        new_level = self.get_current_level()
+        if new_level != self.current_level:
+            self.current_level = new_level
+            self.level_transition_message = f"ENTERING {self.level_names[new_level]} ZONE!"
+            self.level_transition_timer = 100
+    
+    def spawn_scenery(self):
         if len(self.tree_positions) < 20:
             if random.random() < 0.3:
                 side = random.choice(['left', 'right'])
-                tree_y = -5
-                self.tree_positions.append({'side': side, 'y': tree_y})
+                scenery_y = -5
+                self.tree_positions.append({'side': side, 'y': scenery_y, 'type': self.current_level})
     
-    def update_trees(self):
-        for tree in self.tree_positions[:]:
-            tree['y'] += self.speed + 1
+    def update_scenery(self):
+        for item in self.tree_positions[:]:
+            item['y'] += self.speed + 1
             
-            if tree['y'] > self.height:
-                self.tree_positions.remove(tree)
+            if item['y'] > self.height:
+                self.tree_positions.remove(item)
     
-    def draw_trees(self):
-        tree_art = [
-            "  ^  ",
+    def draw_scenery(self):
+        beach_art = [
+            "  Y  ",
             " /|\ ",
             "//|\\\\" 
         ]
         
-        for tree in self.tree_positions:
-            row_base = int(tree['y'])
+        city_art = [
+            "[##]",
+            "[##]",
+            "[##]"
+        ]
+        
+        factory_art = [
+            " ≈≈ ",
+            "[##]",
+            "[##]"
+        ]
+        
+        for item in self.tree_positions:
+            row_base = int(item['y'])
+            level_type = item.get('type', 0)
+            
+            if level_type == 0:
+                art = beach_art
+                color = curses.color_pair(3)
+            elif level_type == 1:
+                art = city_art
+                color = curses.color_pair(6)
+            else:
+                art = factory_art
+                color = curses.color_pair(1) | curses.A_DIM
             
             if 0 <= row_base < self.height - 5:
                 progress = row_base / (self.height - 2)
@@ -188,24 +230,24 @@ class OutRunGame:
                 road_width = int(20 + (60 - 20) * progress)
                 center = self.width // 2 + curve_offset
                 
-                if tree['side'] == 'left':
-                    tree_x = center - road_width // 2 - 8
+                if item['side'] == 'left':
+                    scenery_x = center - road_width // 2 - 8
                 else:
-                    tree_x = center + road_width // 2 + 3
+                    scenery_x = center + road_width // 2 + 3
                 
                 scale = 0.3 + progress * 0.7
                 
-                for i, line in enumerate(tree_art):
+                for i, line in enumerate(art):
                     row = row_base + int(i * scale)
                     if 0 <= row < self.height - 1:
                         scaled_line = line if scale > 0.6 else line[1:-1]
-                        col = tree_x
+                        col = scenery_x
                         
                         for j, ch in enumerate(scaled_line):
                             c = col + j
                             if 0 <= c < self.width and ch != ' ':
                                 try:
-                                    self.stdscr.addch(row, c, ch, curses.color_pair(3))
+                                    self.stdscr.addch(row, c, ch, color)
                                 except:
                                     pass
     
@@ -249,6 +291,18 @@ class OutRunGame:
             sound_text = f"[M]USIC: {'ON' if self.music_enabled else 'OFF'}"
             sound_color = curses.color_pair(3) if self.music_enabled else curses.color_pair(1)
             self.stdscr.addstr(0, 2, sound_text, sound_color)
+            
+            level_text = f"LEVEL: {self.level_names[self.current_level]}"
+            level_colors = [curses.color_pair(2), curses.color_pair(4), curses.color_pair(1)]
+            self.stdscr.addstr(0, self.width - len(level_text) - 2, level_text, level_colors[self.current_level] | curses.A_BOLD)
+            
+            if self.level_transition_timer > 0:
+                transition_y = self.height // 2
+                transition_x = self.width // 2 - len(self.level_transition_message) // 2
+                if transition_x >= 0:
+                    self.stdscr.addstr(transition_y, transition_x, self.level_transition_message, 
+                                     curses.color_pair(5) | curses.A_BOLD | curses.A_REVERSE)
+                self.level_transition_timer -= 1
         except:
             pass
     
@@ -445,6 +499,9 @@ class OutRunGame:
         self.tree_positions = []
         self.tree_offset = 0
         self.music_enabled = True
+        self.current_level = 0
+        self.level_transition_message = ""
+        self.level_transition_timer = 0
     
     def run(self):
         self.draw_title_screen()
@@ -463,11 +520,12 @@ class OutRunGame:
                 
                 self.distance += self.speed * 0.5
                 self.update_curve()
+                self.check_level_transition()
                 
                 self.draw_road()
-                self.spawn_trees()
-                self.update_trees()
-                self.draw_trees()
+                self.spawn_scenery()
+                self.update_scenery()
+                self.draw_scenery()
                 self.spawn_traffic()
                 self.update_traffic()
                 self.draw_traffic()

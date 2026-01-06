@@ -4,14 +4,18 @@ A retro OutRun-style racing game built entirely with ASCII art in the terminal!
 
 ## Features
 
+- **Multiple Themed Levels**: 3 unique zones with different visuals
+  - 🏖️ **Beach** (0-500m): Palm trees and sunny vibes
+  - 🏙️ **City** (500-1000m): Urban buildings and skyscrapers
+  - 🏭 **Factory** (1000m+): Industrial zone with smokestacks
 - **Perspective Road Rendering**: 3D-style road with proper perspective effect and curves
 - **Dynamic Curves**: Road bends left and right for realistic racing
 - **Player Controls**: Smooth, responsive left/right movement and speed control
 - **Traffic System**: Dynamic traffic cars to avoid
-- **Roadside Trees**: Scrolling trees with perspective scaling for immersion
+- **Level-Specific Scenery**: Unique roadside objects for each zone
 - **Collision Detection**: Game over when hitting traffic or road edges
 - **Scoring System**: Earn points for each car you pass
-- **Chiptune Music**: Procedurally generated retro 8-bit background music
+- **Chiptune Music**: Procedurally generated retro 8-bit background music with toggle
 - **Retro Aesthetics**: Colorful terminal graphics with classic arcade feel
 - **Speed Control**: Accelerate and decelerate to navigate traffic
 
