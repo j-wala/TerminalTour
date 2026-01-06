@@ -50,6 +50,8 @@ class OutRunGame:
         self.curve_change_timer = 0
         self.tree_positions = []
         self.tree_offset = 0
+        self.music_enabled = True
+        self.sound = None
         
         self.init_music()
         
@@ -85,11 +87,12 @@ class OutRunGame:
                 bass = np.concatenate([bass, generate_square_wave(bass_notes[i], note_duration, sample_rate)])
             
             combined = np.stack([melody + bass * 0.5, melody + bass * 0.5], axis=1)
-            sound = pygame.sndarray.make_sound(combined.astype(np.int16))
+            self.sound = pygame.sndarray.make_sound(combined.astype(np.int16))
             
             def play_loop():
                 while True:
-                    sound.play()
+                    if self.music_enabled:
+                        self.sound.play()
                     time.sleep(duration)
             
             music_thread = threading.Thread(target=play_loop, daemon=True)
@@ -242,6 +245,10 @@ class OutRunGame:
             
             dist_text = f"DISTANCE: {int(self.distance)}m"
             self.stdscr.addstr(self.height - 1, self.width // 2 - len(dist_text) // 2, dist_text, curses.color_pair(5) | curses.A_BOLD)
+            
+            sound_text = f"[M]USIC: {'ON' if self.music_enabled else 'OFF'}"
+            sound_color = curses.color_pair(3) if self.music_enabled else curses.color_pair(1)
+            self.stdscr.addstr(0, 2, sound_text, sound_color)
         except:
             pass
     
@@ -309,6 +316,14 @@ class OutRunGame:
                 
             if key == curses.KEY_DOWN or key == ord('s'):
                 self.speed = max(0.5, self.speed - 0.1)
+            
+            if key == ord('m') or key == ord('M'):
+                self.music_enabled = not self.music_enabled
+                if not self.music_enabled and self.sound:
+                    try:
+                        self.sound.stop()
+                    except:
+                        pass
                 
         except:
             pass
@@ -344,6 +359,7 @@ class OutRunGame:
         instructions = [
             "CONTROLS:",
             "Arrow Keys / WASD - Move & Speed",
+            "M - Toggle Music",
             "Q - Quit",
             "",
             "Press any key to start..."
@@ -428,6 +444,7 @@ class OutRunGame:
         self.curve_change_timer = 100
         self.tree_positions = []
         self.tree_offset = 0
+        self.music_enabled = True
     
     def run(self):
         self.draw_title_screen()
