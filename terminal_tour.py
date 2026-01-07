@@ -17,7 +17,7 @@ from music_theory import generate_music_from_config
 from music_generator import MusicGenerator
 
 
-class OutRunGame:
+class TerminalTourGame:
     """Main game class with modular architecture"""
     
     def __init__(self, stdscr):
@@ -732,7 +732,7 @@ class OutRunGame:
 
 
 def main(stdscr):
-    game = OutRunGame(stdscr)
+    game = TerminalTourGame(stdscr)
     game.run()
 
 

@@ -1,5 +1,5 @@
 """
-UI components for ASCII OutRun
+UI components for Terminal Tour
 Handles HUD, menus, and screen displays
 """
 
@@ -70,10 +70,12 @@ class TitleScreen:
         self.stdscr.clear()
         
         title = [
-            "   ___  __  __________ __  ___   __",
-            "  / _ \\/ / / /_  __/ _ \\ / / / | / /",
-            " / // / /_/ / / / / , _/ /_/ /  |/ /",
-            "/____/\\____/ /_/ /_/|_|\\____/_/|___/"
+            "╔╦╗┌─┐┬─┐┌┬┐┬┌┐┌┌─┐┬  ",
+            " ║ ├┤ ├┬┘│││││││├─┤│  ",
+            " ╩ └─┘┴└─┴ ┴┴┘└┘┴ ┴┴─┘",
+            "     ╔╦╗┌─┐┬ ┬┬─┐     ",
+            "      ║ │ ││ │├┬┘     ",
+            "      ╩ └─┘└─┘┴└─     "
         ]
         
         start_y = self.height // 2 - len(title) - 5

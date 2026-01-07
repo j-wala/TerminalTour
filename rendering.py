@@ -1,5 +1,5 @@
 """
-Rendering components for ASCII OutRun
+Rendering components for Terminal Tour
 Modular rendering system for game objects
 """
 

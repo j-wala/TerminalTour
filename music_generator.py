@@ -1,5 +1,5 @@
 """
-Enhanced procedural music generation for ASCII OutRun
+Enhanced procedural music generation for Terminal Tour
 Generates chiptune music with melody, bass, harmony, and drums
 """
 

@@ -1,5 +1,5 @@
 """
-Level specification module for ASCII OutRun
+Level specification module for Terminal Tour
 Defines all level configurations, assets, and rendering data
 """
 

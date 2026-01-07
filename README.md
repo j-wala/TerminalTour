@@ -1,78 +1,43 @@
-# ASCII OutRun 🏎️
+# Terminal Tour 🚗
 
-A retro OutRun-style racing game built entirely with ASCII art in the terminal!
+A retro-style endless racing game built entirely in your terminal with ASCII art!
 
 ## Features
 
-- **Multiple Themed Levels**: 3 unique zones with different visuals
-  - 🏖️ **Beach** (0-500m): Palm trees and sunny vibes
-  - 🏙️ **City** (500-1000m): Urban buildings and skyscrapers
-  - 🏭 **Factory** (1000m+): Industrial zone with smokestacks
-- **Perspective Road Rendering**: 3D-style road with proper perspective effect and curves
-- **Dynamic Curves**: Road bends left and right for realistic racing
-- **Player Controls**: Smooth, responsive left/right movement and speed control
-- **Traffic System**: Dynamic traffic cars to avoid
-- **Level-Specific Scenery**: Unique roadside objects for each zone
-- **Collision Detection**: Game over when hitting traffic or road edges
-- **Scoring System**: Earn points for each car you pass
-- **Rich Chiptune Music**: Procedurally generated music with melody, bass, harmony, and drums (kick, snare, hi-hat)
-- **Retro Aesthetics**: Colorful terminal graphics with classic arcade feel
-- **Speed Control**: Accelerate and decelerate to navigate traffic
+- **11 Themed Levels**: Diverse zones including Beach, City, Factory, Desert, Haunted, Neon, Arctic, Jungle, Galaxy, Volcano, and Ocean
+- **Procedural Chiptune Music**: Unique music for each level with melody, bass, harmony, and drums
+- **3D Perspective Road**: Dynamic curves and realistic perspective rendering
+- **Traffic System**: Dodge traffic cars and earn points
+- **Smooth Transitions**: Seamless level changes with visual effects
+- **Customizable Settings**: Configure levels, music, and game modes
+- **Sound Mixer**: Adjust individual instrument volumes
 
 ## Controls
 
-- **Arrow Keys** or **WASD**: Navigate your car
-  - Left/Right or A/D: Move left and right
-  - Up/Down or W/S: Increase/decrease speed
-- **Q**: Quit game
-- **R**: Restart after game over
-
-## How to Play
-
-1. Run the game:
-   ```
-   python outrun.py
-   ```
-
-2. Avoid traffic cars (red) while staying on the road
-3. Pass cars to earn points (10 points per car)
-4. Control your speed to navigate through traffic
-5. Try to drive as far as possible without crashing!
-
-## Requirements
-
-- Python 3.6+
-- Windows `windows-curses` module
-- pygame for music
-- numpy for audio generation
+- **Arrow Keys** or **WASD**: Steer and control speed
+- **ESC**: Pause menu
+- **Q**: Quit
 
 ## Installation
 
 ```bash
 pip install -r requirements.txt
-```
-
-## Running the Game
-
-**Refactored Version (Recommended)**:
-```bash
 python outrun_refactored.py
 ```
 
-**Original Version**:
-```bash
-python outrun.py
-```
+## Requirements
 
-Both versions are functionally identical, but the refactored version uses a modular architecture that makes it easy to add new levels, scenery, and features. See `ARCHITECTURE.md` for details.
+- Python 3.6+
+- pygame (for music)
+- numpy (for audio generation)
+- windows-curses (Windows only)
 
-To play without music (if pygame/numpy aren't available), the game will still work - music is optional.
+Music is optional - the game works without pygame/numpy.
 
 ## Tips
 
-- Higher speeds earn distance faster but make it harder to dodge
-- Keep your speed moderate in heavy traffic
-- Use the full width of the road to your advantage
-- Watch the road edges - they narrow at the top!
+- Moderate speed in heavy traffic
+- Use full road width strategically
+- Higher speeds = more distance but harder dodging
 
 Enjoy the ride! 🌴🌅

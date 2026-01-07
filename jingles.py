@@ -1,5 +1,5 @@
 """
-Musical jingles and menu music for ASCII OutRun
+Musical jingles and menu music for Terminal Tour
 """
 
 import numpy as np

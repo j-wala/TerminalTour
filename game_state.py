@@ -1,5 +1,5 @@
 """
-Game state management for ASCII OutRun
+Game state management for Terminal Tour
 Handles game state, collision detection, and game logic
 """
 

@@ -1,5 +1,5 @@
 """
-Pause menu system for ASCII OutRun
+Pause menu system for Terminal Tour
 Handles pause state and pause music
 """
 

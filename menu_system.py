@@ -1,5 +1,5 @@
 """
-Menu system for ASCII OutRun
+Menu system for Terminal Tour
 Handles main menu, settings, and navigation
 """
 
@@ -10,7 +10,7 @@ import os
 
 class GameSettings:
     """Holds game settings with persistence"""
-    SETTINGS_FILE = 'outrun_settings.json'
+    SETTINGS_FILE = 'terminal_tour_settings.json'
     
     def __init__(self):
         # Basic settings
@@ -155,10 +155,12 @@ class MainMenu:
         """Show main menu options"""
         # Title
         title = [
-            "   ___  __  __________ __  ___   __",
-            "  / _ \\/ / / /_  __/ _ \\ / / / | / /",
-            " / // / /_/ / / / / , _/ /_/ /  |/ /",
-            "/____/\\____/ /_/ /_/|_|\\____/_/|___/"
+            "╔╦╗┌─┐┬─┐┌┬┐┬┌┐┌┌─┐┬  ",
+            " ║ ├┤ ├┬┘│││││││├─┤│  ",
+            " ╩ └─┘┴└─┴ ┴┴┘└┘┴ ┴┴─┘",
+            "     ╔╦╗┌─┐┬ ┬┬─┐     ",
+            "      ║ │ ││ │├┬┘     ",
+            "      ╩ └─┘└─┘┴└─     "
         ]
         
         start_y = self.height // 2 - len(title) - 8
