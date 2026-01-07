@@ -432,8 +432,9 @@ class MainMenu:
             # Move level up in order
             if self.selected_option > 0:
                 idx = self.selected_option
-                self.settings.level_order[idx], self.settings.level_order[idx-1] = \
-                    self.settings.level_order[idx-1], self.settings.level_order[idx]
+                if idx < len(self.settings.level_order) and idx - 1 < len(self.settings.level_order):
+                    self.settings.level_order[idx], self.settings.level_order[idx-1] = \
+                        self.settings.level_order[idx-1], self.settings.level_order[idx]
                 self.selected_option -= 1
         elif key == curses.KEY_RIGHT or key == ord('d'):
             # Move level down in order
@@ -441,9 +442,10 @@ class MainMenu:
             num_levels = len(LEVELS)
             if self.selected_option < num_levels - 1:
                 idx = self.selected_option
-                self.settings.level_order[idx], self.settings.level_order[idx+1] = \
-                    self.settings.level_order[idx+1], self.settings.level_order[idx]
-                self.selected_option += 1
+                if idx < len(self.settings.level_order) and idx + 1 < len(self.settings.level_order):
+                    self.settings.level_order[idx], self.settings.level_order[idx+1] = \
+                        self.settings.level_order[idx+1], self.settings.level_order[idx]
+                    self.selected_option += 1
         elif key == ord('\n'):
             return 'back'
         elif key == 27:  # ESC

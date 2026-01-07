@@ -66,6 +66,7 @@ class OutRunGame:
         # Music
         self.sound = None
         self.music_cache = {}  # Cache generated music by level name
+        self.music_thread_active = False  # Flag to track active music thread
         self.menu_music = None
         self.menu_music_duration = 0
         self.game_over_jingle = None
@@ -192,12 +193,19 @@ class OutRunGame:
                 pass
     
     def stop_game_music(self):
-        """Stop game music"""
+        """Stop game music and music thread"""
+        # Signal music thread to stop
+        self.music_thread_active = False
+        
+        # Stop the sound
         if self.sound:
             try:
                 self.sound.stop()
             except:
                 pass
+        
+        # Give thread time to stop
+        time.sleep(0.05)
     
     def stop_all_music(self):
         """Stop all music and audio to prevent bleeding"""
@@ -278,6 +286,9 @@ class OutRunGame:
     def generate_music(self):
         """Load music from cache or generate if not cached"""
         try:
+            # Stop any existing music thread first
+            self.stop_game_music()
+            
             # Check cache first
             if self.current_level.name in self.music_cache:
                 self.sound, duration = self.music_cache[self.current_level.name]
@@ -290,13 +301,15 @@ class OutRunGame:
                     return  # Generation failed
             
             def play_loop():
-                while not self.game_state.game_over:
+                self.music_thread_active = True
+                while not self.game_state.game_over and self.music_thread_active:
                     if self.game_state.music_enabled and self.sound:
                         # Stop any previous playback to prevent stacking
                         self.sound.stop()
                         # Play the sound
                         self.sound.play()
                     time.sleep(duration)
+                self.music_thread_active = False
             
             music_thread = threading.Thread(target=play_loop, daemon=True)
             music_thread.start()
@@ -635,6 +648,9 @@ class OutRunGame:
                         else:
                             self.current_level = LEVELS[0]
                         self.game_state.distance = 0
+                        
+                        # Reset music thread flag before regenerating music
+                        self.music_thread_active = False
                         self.init_music()
                         
                         # Show countdown with game rendered
@@ -675,8 +691,11 @@ class OutRunGame:
                     if active_indices:
                         self.current_level = LEVELS[active_indices[0]]
                     else:
-                        self.current_level = LEVELS[0]  # Fallback
+                        self.current_level = LEVELS[0]
                     self.game_state.distance = 0
+                    
+                    # Reset music thread flag before regenerating music
+                    self.music_thread_active = False
                     
                     # Regenerate music
                     self.init_music()
