@@ -158,6 +158,11 @@ class MusicGenerator:
         
         return drum_track
     
+    def calculate_note_duration(self, bpm, beats_per_note=0.5):
+        """Calculate note duration based on BPM (0.5 = eighth note, 1.0 = quarter note)"""
+        beat_duration = 60.0 / bpm  # Duration of one quarter note
+        return beat_duration * beats_per_note
+    
     def apply_groove_timing(self, base_duration, note_index, groove='straight'):
         """Apply groove timing to note duration"""
         import random
@@ -170,11 +175,12 @@ class MusicGenerator:
         
         return base_duration * timing_multiplier * randomization
     
-    def generate_melody_track(self, notes, duration, groove='straight'):
-        """Generate melody using square wave with groove and timing variation"""
+    def generate_melody_track(self, notes, duration, groove='straight', bpm=120):
+        """Generate melody using square wave with groove and timing variation synced to BPM"""
         import random
         
-        base_duration = duration / len(notes)
+        # Calculate base note duration from BPM (eighth notes)
+        base_duration = self.calculate_note_duration(bpm, beats_per_note=0.5)
         melody = np.array([], dtype=np.int16)
         total_time = 0
         
@@ -201,11 +207,12 @@ class MusicGenerator:
         
         return melody
     
-    def generate_bass_track(self, notes, duration, groove='straight'):
-        """Generate bass using triangle wave with groove and timing variation"""
+    def generate_bass_track(self, notes, duration, groove='straight', bpm=120):
+        """Generate bass using triangle wave with groove and timing variation synced to BPM"""
         import random
         
-        base_duration = duration / len(notes)
+        # Calculate base note duration from BPM (eighth notes)
+        base_duration = self.calculate_note_duration(bpm, beats_per_note=0.5)
         bass = np.array([], dtype=np.int16)
         total_time = 0
         
@@ -234,11 +241,12 @@ class MusicGenerator:
         
         return bass
     
-    def generate_harmony_track(self, melody_notes, duration, groove='straight'):
-        """Generate harmony (third above melody) with groove"""
+    def generate_harmony_track(self, melody_notes, duration, groove='straight', bpm=120):
+        """Generate harmony (third above melody) with groove synced to BPM"""
         import random
         
-        base_duration = duration / len(melody_notes)
+        # Calculate base note duration from BPM (eighth notes)
+        base_duration = self.calculate_note_duration(bpm, beats_per_note=0.5)
         harmony = np.array([], dtype=np.int16)
         
         for i, note in enumerate(melody_notes):
@@ -275,10 +283,10 @@ class MusicGenerator:
                 'drums': 0.25
             }
         
-        # Generate individual tracks with groove
-        melody = self.generate_melody_track(melody_notes, duration, groove)
-        bass = self.generate_bass_track(bass_notes, duration, groove)
-        harmony = self.generate_harmony_track(melody_notes, duration, groove)
+        # Generate individual tracks with groove, all synced to BPM
+        melody = self.generate_melody_track(melody_notes, duration, groove, bpm)
+        bass = self.generate_bass_track(bass_notes, duration, groove, bpm)
+        harmony = self.generate_harmony_track(melody_notes, duration, groove, bpm)
         drums = self.generate_drum_pattern(duration, bpm, drum_pattern)
         
         # Ensure all tracks are the same length

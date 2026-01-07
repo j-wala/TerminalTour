@@ -61,7 +61,9 @@ class OutRunGame:
         self.game_over_jingle_duration = 0
         self.game_over_music = None
         self.game_over_music_duration = 0
-        self.settings = None
+        # Initialize default settings for menu music
+        from menu_system import GameSettings
+        self.settings = GameSettings()
         self.menu_music_playing = False
         self.game_over_music_playing = False
         
@@ -115,8 +117,8 @@ class OutRunGame:
     
     def play_menu_music(self):
         """Start menu music loop"""
-        # Check if music is enabled
-        if not (self.settings and self.settings.music_enabled):
+        # Check if music is enabled (settings always exists now)
+        if self.settings and not self.settings.music_enabled:
             return
         
         if self.menu_music and not self.menu_music_playing:
@@ -202,17 +204,21 @@ class OutRunGame:
         try:
             music_gen = MusicGenerator(sample_rate=22050)
             
-            duration = 4.0
-            
-            # Generate music from level's music configuration
+            # Generate music from level's music configuration with 4 bars
             if self.current_level.music_config:
-                level_music = generate_music_from_config(self.current_level.music_config)
+                level_music = generate_music_from_config(self.current_level.music_config, num_bars=4)
                 
                 melody_notes = level_music['melody']
                 bass_notes = level_music['bass']
                 bpm = level_music['bpm']
                 drum_pattern = level_music['drum_pattern']
                 groove = level_music['groove']
+                
+                # Calculate duration based on BPM and number of notes (32 eighth notes = 4 bars)
+                beats_per_note = 0.5  # Eighth notes
+                num_notes = len(melody_notes)
+                beat_duration = 60.0 / bpm
+                duration = num_notes * beat_duration * beats_per_note
             else:
                 # Fallback if no music config
                 melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
@@ -220,6 +226,7 @@ class OutRunGame:
                 bpm = 120
                 drum_pattern = None
                 groove = 'straight'
+                duration = 4.0
             
             # Get current mix levels from sound mixer
             mix_levels = self.sound_mixer.get_mix_levels()

@@ -238,8 +238,8 @@ class ChordProgression:
         return bass_line[:num_notes]
 
 
-def generate_music_from_config(music_config):
-    """Generate music from a level's music configuration"""
+def generate_music_from_config(music_config, num_bars=4):
+    """Generate music from a level's music configuration with multiple bars"""
     
     # Determine scale intervals based on type
     if music_config.scale_type == 'major':
@@ -260,9 +260,12 @@ def generate_music_from_config(music_config):
         bass_root
     )
     
-    # Generate melody and bass
-    melody = ChordProgression.generate_melody(scale, 8, music_config.melody_style)
-    bass = ChordProgression.generate_bass(scale, music_config.progression_style, 8)
+    # Generate melody and bass for multiple bars (8 notes per bar)
+    notes_per_bar = 8
+    total_notes = num_bars * notes_per_bar
+    
+    melody = ChordProgression.generate_melody(scale, total_notes, music_config.melody_style)
+    bass = ChordProgression.generate_bass(scale, music_config.progression_style, total_notes)
     
     # Get drum pattern
     drum_pattern = DrumPattern.get_pattern(music_config.drum_pattern)
