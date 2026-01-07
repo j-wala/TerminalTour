@@ -202,9 +202,39 @@ DESERT_LEVEL = LevelSpec(
 LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL]
 
 
-def get_level_for_distance(distance):
-    """Returns the appropriate level spec based on distance traveled"""
-    for level in reversed(LEVELS):
-        if distance >= level.distance_threshold:
-            return level
-    return LEVELS[0]
+def get_level_for_distance(distance, settings=None):
+    """Return the appropriate level based on distance traveled and settings"""
+    if settings is None:
+        # Fallback to default behavior
+        for level in reversed(LEVELS):
+            if distance >= level.distance_threshold:
+                return level
+        return LEVELS[0]
+    
+    # Get active levels from settings
+    active_indices = settings.get_active_levels()
+    if not active_indices:
+        return LEVELS[0]  # Fallback
+    
+    # Build active levels with dynamic thresholds
+    active_levels = []
+    for i, level_idx in enumerate(active_indices):
+        threshold = i * settings.level_length
+        active_levels.append((threshold, LEVELS[level_idx]))
+    
+    # Handle endless mode
+    if settings.endless_mode and active_levels:
+        # Calculate which loop we're in
+        total_length = len(active_indices) * settings.level_length
+        normalized_distance = distance % total_length
+        
+        for threshold, level in reversed(active_levels):
+            if normalized_distance >= threshold:
+                return level
+        return active_levels[0][1]
+    else:
+        # Normal mode - find current level
+        for threshold, level in reversed(active_levels):
+            if distance >= threshold:
+                return level
+        return active_levels[0][1]

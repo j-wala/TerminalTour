@@ -280,15 +280,51 @@ class OutRunGame:
     
     def check_level_transition(self):
         """Check and handle level transitions with element-based effects"""
-        new_level = get_level_for_distance(self.game_state.distance)
+        # Calculate transition window (50m before and after threshold)
+        transition_window = 50  # meters
         
-        if new_level != self.current_level:
-            # Start transition sequence
-            if self.game_state.transition_stage == 'none':
+        # Get active level indices
+        active_indices = self.settings.get_active_levels() if self.settings else [0, 1, 2, 3]
+        if not active_indices:
+            return
+        
+        # Calculate current level index based on distance
+        if self.settings and self.settings.endless_mode:
+            total_length = len(active_indices) * self.settings.level_length
+            normalized_distance = self.game_state.distance % total_length
+            current_level_idx = int(normalized_distance / self.settings.level_length)
+        else:
+            current_level_idx = int(self.game_state.distance / self.settings.level_length) if self.settings else 0
+        
+        # Calculate next level index
+        next_level_idx = (current_level_idx + 1) % len(active_indices)
+        
+        # Get threshold for next level
+        if self.settings and self.settings.endless_mode:
+            total_length = len(active_indices) * self.settings.level_length
+            base_threshold = (current_level_idx + 1) * self.settings.level_length
+            normalized_distance = self.game_state.distance % total_length
+            distance_to_threshold = base_threshold - normalized_distance
+        else:
+            next_threshold = (current_level_idx + 1) * (self.settings.level_length if self.settings else 500)
+            distance_to_threshold = next_threshold - self.game_state.distance
+        
+        # Start transition when within window before threshold
+        if -transition_window <= distance_to_threshold <= transition_window and self.game_state.transition_stage == 'none':
+            if current_level_idx < len(active_indices) - 1 or (self.settings and self.settings.endless_mode):
+                # Get next level and store it for the transition
+                next_level_index = active_indices[next_level_idx]
+                from level_specs import LEVELS
+                new_level = LEVELS[next_level_index]
+                
+                # Store the target level for this transition
+                self.transition_target_level = new_level
+                
                 self.game_state.transition_stage = 'horizon_out'
                 self.game_state.transition_progress = 0
                 self.game_state.old_level_color = self.current_level.sky_config.color_pair
                 self.game_state.new_level_color = new_level.sky_config.color_pair
+                self.previous_level = self.current_level
         
         # Handle transition stages
         if self.game_state.transition_stage == 'horizon_out':
@@ -306,24 +342,28 @@ class OutRunGame:
             if self.game_state.transition_progress >= 1.0:
                 self.game_state.transition_stage = 'color_fade'
                 self.game_state.transition_progress = 0
-                
-                # Stop old music
                 self.stop_game_music()
         
         elif self.game_state.transition_stage == 'color_fade':
             # Gradient to new sky color
             self.game_state.transition_progress += 0.08
             if self.game_state.transition_progress >= 1.0:
-                # Switch to new level
+                # Use the stored target level from transition start
+                if hasattr(self, 'transition_target_level'):
+                    new_level = self.transition_target_level
+                else:
+                    # Fallback if not set
+                    new_level = get_level_for_distance(self.game_state.distance, self.settings)
+                
                 self.current_level = new_level
                 self.game_state.level_transition_message = f"ENTERING {new_level.name} ZONE!"
                 self.game_state.level_transition_timer = 60
                 
-                # Clear renderers for new level
+                # Clear old objects
                 self.sky_renderer.clear_objects()
                 self.scenery_renderer.clear_objects()
                 
-                # Regenerate music for new level (starts at 0 volume)
+                # Regenerate music for new level starting at zero volume
                 try:
                     self.generate_music()
                     if self.sound:
@@ -497,13 +537,13 @@ class OutRunGame:
                 self.sky_renderer.clear_objects()
                 self.scenery_renderer.clear_objects()
                 
-                # Set starting level based on settings
-                if settings.starting_level > 0:
-                    self.current_level = LEVELS[settings.starting_level]
-                    self.game_state.distance = LEVELS[settings.starting_level].distance_threshold
+                # Always start at first active level with distance 0
+                active_indices = settings.get_active_levels()
+                if active_indices:
+                    self.current_level = LEVELS[active_indices[0]]
                 else:
-                    self.current_level = LEVELS[0]
-                    self.game_state.distance = 0
+                    self.current_level = LEVELS[0]  # Fallback
+                self.game_state.distance = 0
                 
                 # Initialize or regenerate game music
                 self.stdscr.nodelay(1)  # Non-blocking mode for gameplay
@@ -560,13 +600,13 @@ class OutRunGame:
                     self.sky_renderer.clear_objects()
                     self.scenery_renderer.clear_objects()
                     
-                    # Reset to configured starting level
-                    if self.settings and self.settings.starting_level > 0:
-                        self.current_level = LEVELS[self.settings.starting_level]
-                        self.game_state.distance = LEVELS[self.settings.starting_level].distance_threshold
+                    # Always start at first active level with distance 0
+                    active_indices = self.settings.get_active_levels() if self.settings else [0, 1, 2, 3]
+                    if active_indices:
+                        self.current_level = LEVELS[active_indices[0]]
                     else:
-                        self.current_level = LEVELS[0]
-                        self.game_state.distance = 0
+                        self.current_level = LEVELS[0]  # Fallback
+                    self.game_state.distance = 0
                     
                     # Switch back to non-blocking mode
                     self.stdscr.nodelay(1)

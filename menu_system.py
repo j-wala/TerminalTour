@@ -4,15 +4,70 @@ Handles main menu, settings, and navigation
 """
 
 import curses
+import json
+import os
 
 
 class GameSettings:
-    """Holds game settings"""
+    """Holds game settings with persistence"""
+    SETTINGS_FILE = 'outrun_settings.json'
+    
     def __init__(self):
-        self.level_order = [0, 1, 2, 3]  # Beach, City, Factory, Desert
-        self.starting_level = 0
+        # Basic settings
         self.music_enabled = True
         self.difficulty = 'normal'  # 'easy', 'normal', 'hard'
+        
+        # Level configuration
+        self.level_length = 500  # Distance in meters per level
+        self.enabled_levels = [True, True, True, True]  # Beach, City, Factory, Desert
+        self.level_order = [0, 1, 2, 3]  # Order of levels (first is starting level)
+        self.endless_mode = False  # Loop levels infinitely
+        
+        # Try to load saved settings
+        self.load()
+    
+    def save(self):
+        """Save settings to JSON file"""
+        try:
+            settings_data = {
+                'music_enabled': self.music_enabled,
+                'difficulty': self.difficulty,
+                'level_length': self.level_length,
+                'enabled_levels': self.enabled_levels,
+                'level_order': self.level_order,
+                'endless_mode': self.endless_mode
+            }
+            with open(self.SETTINGS_FILE, 'w') as f:
+                json.dump(settings_data, f, indent=2)
+            return True
+        except Exception as e:
+            import sys
+            print(f"Error saving settings: {e}", file=sys.stderr)
+            return False
+    
+    def load(self):
+        """Load settings from JSON file"""
+        try:
+            if os.path.exists(self.SETTINGS_FILE):
+                with open(self.SETTINGS_FILE, 'r') as f:
+                    settings_data = json.load(f)
+                
+                # Load settings with defaults
+                self.music_enabled = settings_data.get('music_enabled', True)
+                self.difficulty = settings_data.get('difficulty', 'normal')
+                self.level_length = settings_data.get('level_length', 500)
+                self.enabled_levels = settings_data.get('enabled_levels', [True, True, True, True])
+                self.level_order = settings_data.get('level_order', [0, 1, 2, 3])
+                self.endless_mode = settings_data.get('endless_mode', False)
+                return True
+        except Exception as e:
+            import sys
+            print(f"Error loading settings: {e}", file=sys.stderr)
+        return False
+    
+    def get_active_levels(self):
+        """Get list of active level indices in play order"""
+        return [idx for idx in self.level_order if idx < len(self.enabled_levels) and self.enabled_levels[idx]]
 
 
 class MainMenu:
@@ -157,12 +212,15 @@ class MainMenu:
             pass
         
         # Settings options
-        settings_y = 10
+        settings_y = 8
         options = [
-            f"Starting Level: {['Beach', 'City', 'Factory', 'Desert'][self.settings.starting_level]}",
+            f"Level Length: {self.settings.level_length}m",
+            f"Endless Mode: {'ON' if self.settings.endless_mode else 'OFF'}",
             f"Music: {'ON' if self.settings.music_enabled else 'OFF'}",
             f"Difficulty: {self.settings.difficulty.upper()}",
+            "CONFIGURE LEVELS",
             "SOUND MIXER",
+            "SAVE SETTINGS",
             "BACK"
         ]
         
@@ -201,9 +259,11 @@ class MainMenu:
         elif key == curses.KEY_DOWN or key == ord('s'):
             self.selected_option = (self.selected_option + 1) % len(options)
         elif key == curses.KEY_LEFT or key == ord('a'):
-            if self.selected_option == 0:  # Starting level
-                self.settings.starting_level = (self.settings.starting_level - 1) % 4
-            elif self.selected_option == 1:  # Music
+            if self.selected_option == 0:  # Level length
+                self.settings.level_length = max(100, self.settings.level_length - 100)
+            elif self.selected_option == 1:  # Endless mode
+                self.settings.endless_mode = not self.settings.endless_mode
+            elif self.selected_option == 2:  # Music
                 self.settings.music_enabled = not self.settings.music_enabled
                 # Control menu music based on setting
                 if self.game:
@@ -211,14 +271,16 @@ class MainMenu:
                         self.game.play_menu_music()
                     else:
                         self.game.stop_menu_music()
-            elif self.selected_option == 2:  # Difficulty
+            elif self.selected_option == 3:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)
                 self.settings.difficulty = difficulties[(idx - 1) % len(difficulties)]
         elif key == curses.KEY_RIGHT or key == ord('d'):
-            if self.selected_option == 0:  # Starting level
-                self.settings.starting_level = (self.settings.starting_level + 1) % 4
-            elif self.selected_option == 1:  # Music
+            if self.selected_option == 0:  # Level length
+                self.settings.level_length = min(2000, self.settings.level_length + 100)
+            elif self.selected_option == 1:  # Endless mode
+                self.settings.endless_mode = not self.settings.endless_mode
+            elif self.selected_option == 2:  # Music
                 self.settings.music_enabled = not self.settings.music_enabled
                 # Control menu music based on setting
                 if self.game:
@@ -226,15 +288,134 @@ class MainMenu:
                         self.game.play_menu_music()
                     else:
                         self.game.stop_menu_music()
-            elif self.selected_option == 2:  # Difficulty
+            elif self.selected_option == 3:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)
                 self.settings.difficulty = difficulties[(idx + 1) % len(difficulties)]
         elif key == ord('\n') or key == ord(' '):
-            if self.selected_option == 3:  # Sound Mixer
+            if self.selected_option == 4:  # Configure Levels
+                self.menu_state = 'level_select'
+                self.selected_option = 0
+                return None
+            elif self.selected_option == 5:  # Sound Mixer
                 return 'mixer'
-            elif self.selected_option == 4:  # Back
+            elif self.selected_option == 6:  # Save Settings
+                if self.settings.save():
+                    # Show confirmation briefly
+                    try:
+                        self.stdscr.addstr(self.height - 5, self.width // 2 - 10,
+                                         "Settings Saved!", curses.color_pair(3) | curses.A_BOLD)
+                        self.stdscr.refresh()
+                        import time
+                        time.sleep(0.5)
+                    except:
+                        pass
+            elif self.selected_option == 7:  # Back
                 return 'back'
+        elif key == 27:  # ESC
+            return 'back'
+        
+        return None
+    
+    def _show_level_select(self):
+        """Show level configuration menu"""
+        self.stdscr.clear()
+        
+        title = "CONFIGURE LEVELS"
+        try:
+            self.stdscr.addstr(3, self.width // 2 - len(title) // 2,
+                             title, curses.color_pair(5) | curses.A_BOLD)
+        except:
+            pass
+        
+        # Instructions
+        instructions = [
+            "[UP/DOWN: Navigate] [SPACE: Enable/Disable] [LEFT/RIGHT: Reorder]",
+            "[ENTER: Done] [ESC: Cancel]"
+        ]
+        
+        for i, inst in enumerate(instructions):
+            try:
+                self.stdscr.addstr(5 + i, self.width // 2 - len(inst) // 2,
+                                 inst, curses.color_pair(6) | curses.A_DIM)
+            except:
+                pass
+        
+        level_names = ['Beach', 'City', 'Factory', 'Desert']
+        levels_y = 10
+        
+        # Display level list with enable status and order
+        for i in range(len(level_names)):
+            # Get the level index at this position in play order
+            level_idx = self.settings.level_order[i] if i < len(self.settings.level_order) else i
+            level_name = level_names[level_idx]
+            enabled = self.settings.enabled_levels[level_idx] if level_idx < len(self.settings.enabled_levels) else True
+            
+            status = "[ON]" if enabled else "[OFF]"
+            display = f"{i+1}. {level_name:10s} {status}"
+            
+            x = self.width // 2 - 20
+            
+            if i == self.selected_option:
+                try:
+                    self.stdscr.addstr(levels_y + i * 2, x - 2, "> ",
+                                     curses.color_pair(2) | curses.A_BOLD)
+                    color = curses.color_pair(3) | curses.A_BOLD | curses.A_REVERSE
+                    if not enabled:
+                        color = curses.color_pair(1) | curses.A_BOLD | curses.A_REVERSE
+                    self.stdscr.addstr(levels_y + i * 2, x, display, color)
+                except:
+                    pass
+            else:
+                try:
+                    color = curses.color_pair(6)
+                    if not enabled:
+                        color = curses.color_pair(1) | curses.A_DIM
+                    self.stdscr.addstr(levels_y + i * 2, x, display, color)
+                except:
+                    pass
+        
+        # Show active levels count
+        active_count = len(self.settings.get_active_levels())
+        info = f"Active Levels: {active_count}/4"
+        try:
+            self.stdscr.addstr(levels_y + 10, self.width // 2 - len(info) // 2,
+                             info, curses.color_pair(3) | curses.A_BOLD)
+        except:
+            pass
+        
+        self.stdscr.refresh()
+        
+        # Handle input
+        key = self.stdscr.getch()
+        
+        if key == curses.KEY_UP or key == ord('w'):
+            self.selected_option = (self.selected_option - 1) % 4
+        elif key == curses.KEY_DOWN or key == ord('s'):
+            self.selected_option = (self.selected_option + 1) % 4
+        elif key == ord(' '):
+            # Toggle enable/disable for selected level
+            level_idx = self.settings.level_order[self.selected_option]
+            self.settings.enabled_levels[level_idx] = not self.settings.enabled_levels[level_idx]
+            # Ensure at least one level is enabled
+            if not any(self.settings.enabled_levels):
+                self.settings.enabled_levels[level_idx] = True
+        elif key == curses.KEY_LEFT or key == ord('a'):
+            # Move level up in order
+            if self.selected_option > 0:
+                idx = self.selected_option
+                self.settings.level_order[idx], self.settings.level_order[idx-1] = \
+                    self.settings.level_order[idx-1], self.settings.level_order[idx]
+                self.selected_option -= 1
+        elif key == curses.KEY_RIGHT or key == ord('d'):
+            # Move level down in order
+            if self.selected_option < 3:
+                idx = self.selected_option
+                self.settings.level_order[idx], self.settings.level_order[idx+1] = \
+                    self.settings.level_order[idx+1], self.settings.level_order[idx]
+                self.selected_option += 1
+        elif key == ord('\n'):
+            return 'back'
         elif key == 27:  # ESC
             return 'back'
         
