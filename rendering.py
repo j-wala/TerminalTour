@@ -193,20 +193,45 @@ class SceneryRenderer:
     
     def spawn(self, level_spec, curve_offset_func):
         """Spawn new scenery based on level spec"""
-        max_objects = 25
-        spawn_rate = 0.35
+        max_objects = 50  # Increased for more detail
+        roadside_spawn_rate = 0.4  # Roadside objects spawn rate
+        distant_spawn_rate = 0.3  # Distant objects spawn rate
         
         if len(self.scenery_objects) < max_objects:
-            if random.random() < spawn_rate:
+            # Spawn roadside scenery (close to road)
+            if random.random() < roadside_spawn_rate and level_spec.roadside_scenery:
                 side = random.choice(['left', 'right'])
                 scenery_y = -5
                 
-                scenery_type = self._weighted_choice(level_spec.scenery_types)
+                scenery_type = self._weighted_choice(level_spec.roadside_scenery)
+                
+                # Roadside: 6-10 pixels from road edge
+                horizontal_offset = random.randint(6, 10)
                 
                 self.scenery_objects.append({
                     'side': side,
                     'y': scenery_y,
-                    'scenery_type': scenery_type
+                    'scenery_type': scenery_type,
+                    'h_offset': horizontal_offset,
+                    'is_distant': False
+                })
+            
+            # Spawn distant scenery (far from road)
+            elif random.random() < distant_spawn_rate and level_spec.distant_scenery:
+                side = random.choice(['left', 'right'])
+                scenery_y = -5
+                
+                scenery_type = self._weighted_choice(level_spec.distant_scenery)
+                
+                # Distant: 15-30 pixels from road edge
+                horizontal_offset = random.randint(15, 30)
+                
+                self.scenery_objects.append({
+                    'side': side,
+                    'y': scenery_y,
+                    'scenery_type': scenery_type,
+                    'h_offset': horizontal_offset,
+                    'is_distant': True
                 })
     
     def _weighted_choice(self, scenery_types):
@@ -252,11 +277,14 @@ class SceneryRenderer:
             road_width = int(20 + (60 - 20) * progress)
             center = self.width // 2 + curve_offset
             
-            # Position objects further from road edges for better visibility
+            # Get horizontal offset for feathering (varies per object)
+            h_offset = obj.get('h_offset', 10)  # Default to 10 if not set
+            
+            # Position objects at varying distances from road edges
             if obj['side'] == 'left':
-                scenery_x = center - road_width // 2 - 10
+                scenery_x = center - road_width // 2 - h_offset
             else:
-                scenery_x = center + road_width // 2 + 5
+                scenery_x = center + road_width // 2 + h_offset
             
             scale = 0.3 + progress * 0.7
             

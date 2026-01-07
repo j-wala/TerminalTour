@@ -19,11 +19,14 @@ class MusicConfig:
 
 class LevelSpec:
     """Base class for level specifications"""
-    def __init__(self, name, distance_threshold, sky_config, scenery_types, music_config=None):
+    def __init__(self, name, distance_threshold, sky_config, scenery_types=None, music_config=None, roadside_scenery=None, distant_scenery=None):
         self.name = name
         self.distance_threshold = distance_threshold
         self.sky_config = sky_config
-        self.scenery_types = scenery_types
+        # Support both old and new scenery system
+        self.scenery_types = scenery_types or []
+        self.roadside_scenery = roadside_scenery or scenery_types or []
+        self.distant_scenery = distant_scenery or []
         self.music_config = music_config
 
 class SkyConfig:
@@ -87,10 +90,15 @@ BEACH_LEVEL = LevelSpec(
             {'type': 'island', 'positions': [20, 60, 100], 'art': ['^', '/\\', '~~']},
         ]
     ),
-    scenery_types=[
+    roadside_scenery=[
         SceneryType('palm', ["  Y  ", " /|\\ ", "//|\\\\"], 3, spawn_weight=1.5),
         SceneryType('umbrella', [" _|_ ", "(___)", "  |  "], 2, spawn_weight=1.0),
         SceneryType('rock', [" ___ ", "/   \\", "\\___/"], 6, spawn_weight=0.8),
+    ],
+    distant_scenery=[
+        SceneryType('seagull', [" >v< "], 4, spawn_weight=0.6),
+        SceneryType('driftwood', ["~___~"], 6, spawn_weight=0.5),
+        SceneryType('shell', [" @ "], 2, spawn_weight=0.4),
     ],
     music_config=MusicConfig(
         scale_name='C Major',
@@ -118,10 +126,15 @@ CITY_LEVEL = LevelSpec(
             {'type': 'skyscraper', 'positions': [15, 35, 55, 75, 95], 'art': ['|||', '|||', '[#]']},
         ]
     ),
-    scenery_types=[
+    roadside_scenery=[
         SceneryType('building', ["[##]", "[##]", "[##]"], 6, spawn_weight=1.5),
         SceneryType('lamp', [" O ", " | ", " | "], 2, spawn_weight=1.0),
         SceneryType('sign', ["###", "[>]", " | "], 3, spawn_weight=0.8),
+    ],
+    distant_scenery=[
+        SceneryType('bench', ["[___]", " | | "], 6, spawn_weight=0.7),
+        SceneryType('trash', [" [#] ", "\\___/"], 1, spawn_weight=0.5),
+        SceneryType('hydrant', [" H ", "[#]"], 1, spawn_weight=0.4),
     ],
     music_config=MusicConfig(
         scale_name='A Minor',
@@ -149,10 +162,15 @@ FACTORY_LEVEL = LevelSpec(
             {'type': 'smokestack', 'positions': [10, 30, 50, 70, 90, 110], 'art': ['≈', '≈', '[#]', '[#]']},
         ]
     ),
-    scenery_types=[
+    roadside_scenery=[
         SceneryType('smokestack', [" ≈≈ ", "[##]", "[##]"], 1, spawn_weight=1.5),
         SceneryType('tank', [" __ ", "[__]", "[__]"], 6, spawn_weight=1.0),
         SceneryType('pipe', ["]===", "]===", "]==="], 1, spawn_weight=1.2),
+    ],
+    distant_scenery=[
+        SceneryType('barrel', [" __ ", "(##)", "|__|"], 2, spawn_weight=0.8),
+        SceneryType('crate', ["[##]", "[##]"], 6, spawn_weight=0.6),
+        SceneryType('warning', [" /!\\ ", "[!!]"], 2, spawn_weight=0.5),
     ],
     music_config=MusicConfig(
         scale_name='E Minor',
@@ -182,10 +200,15 @@ DESERT_LEVEL = LevelSpec(
             {'type': 'cactus', 'positions': [40, 85], 'art': [' Y ']},
         ]
     ),
-    scenery_types=[
-        SceneryType('cactus', ["  Y  ", " /|\ ", "  |  "], 3, spawn_weight=2.0),
+    roadside_scenery=[
+        SceneryType('cactus', ["  Y  ", " /|\\ ", "  |  "], 3, spawn_weight=2.0),
         SceneryType('tumbleweed', [" oo ", "(oo)", " oo "], 6, spawn_weight=1.0),
         SceneryType('rock', [" ___ ", "/   \\", "\\___/"], 6, spawn_weight=1.2),
+    ],
+    distant_scenery=[
+        SceneryType('skull', [" ___ ", "(o_o)", " --- "], 6, spawn_weight=0.6),
+        SceneryType('dead_tree', ["  ^  ", " /X\\ "], 6, spawn_weight=0.7),
+        SceneryType('snake', ["~S~~"], 3, spawn_weight=0.4),
     ],
     music_config=MusicConfig(
         scale_name='G Major',
@@ -215,10 +238,15 @@ HAUNTED_LEVEL = LevelSpec(
             {'type': 'tombstone', 'positions': [15, 45, 65, 95], 'art': ['RIP']},
         ]
     ),
-    scenery_types=[
+    roadside_scenery=[
         SceneryType('tombstone', [" RIP ", "|###|", "\\___/"], 6, spawn_weight=2.0),
         SceneryType('dead_tree', ["  ^  ", " /|\\ ", "/   \\"], 5, spawn_weight=1.5),
         SceneryType('ghost', [" ooo ", "(o_o)", "  ~  "], 7, spawn_weight=0.8),
+    ],
+    distant_scenery=[
+        SceneryType('fog', ["~~~~~", "~~~~~"], 7, spawn_weight=0.6),
+        SceneryType('chains', [" |^| ", " |_| "], 6, spawn_weight=0.5),
+        SceneryType('candle', [" * ", " | ", "(_)"], 2, spawn_weight=0.4),
     ],
     music_config=MusicConfig(
         scale_name='D Minor',
@@ -246,10 +274,15 @@ NEON_LEVEL = LevelSpec(
             {'type': 'neon_tower', 'positions': [20, 40, 60, 80, 100], 'art': ['|||', '[#]', '[#]']},
         ]
     ),
-    scenery_types=[
+    roadside_scenery=[
         SceneryType('neon_sign', ["<##>", "[##]", "<##>"], 5, spawn_weight=1.8),
         SceneryType('hologram', [" /\\ ", "/  \\", "\\  /"], 4, spawn_weight=1.2),
         SceneryType('laser_pole', [" ||| ", " ||| ", " ||| "], 6, spawn_weight=1.5),
+    ],
+    distant_scenery=[
+        SceneryType('terminal', [" ___ ", "[###]", "[___]"], 4, spawn_weight=0.7),
+        SceneryType('antenna', [" ))) ", "  |  ", " [#] "], 5, spawn_weight=0.6),
+        SceneryType('energy_core', [" <O> ", " ||| "], 5, spawn_weight=0.5),
     ],
     music_config=MusicConfig(
         scale_name='E Minor',
