@@ -47,6 +47,10 @@ class GameState:
         self.music_enabled = True
         self.level_transition_message = ""
         self.level_transition_timer = 0
+        self.transition_stage = 'none'  # 'none', 'horizon_out', 'color_fade', 'horizon_in'
+        self.transition_progress = 0
+        self.old_level_color = None
+        self.new_level_color = None
     
     def get_curve_offset(self, row):
         """Calculate curve offset for a given row"""

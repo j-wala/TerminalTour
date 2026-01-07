@@ -22,7 +22,7 @@ class SkyRenderer:
         """Clear all sky objects"""
         self.sky_objects = []
     
-    def render(self, level_spec):
+    def render(self, level_spec, curve_offset=0):
         """Render sky based on level specification"""
         sky_height = min(15, self.height // 3)
         sky_config = level_spec.sky_config
@@ -46,6 +46,7 @@ class SkyRenderer:
             self._initialize_sky_objects(sky_config, sky_height)
         
         self._render_sky_objects(sky_height)
+        self._render_horizon_decorations(level_spec, sky_height, curve_offset)
     
     def _initialize_sky_objects(self, sky_config, sky_height):
         """Initialize sky objects based on config"""
@@ -144,6 +145,35 @@ class SkyRenderer:
                 self.stdscr.addch(obj['y'], obj['x'], char, curses.color_pair(6) | curses.A_DIM)
             except:
                 pass
+    
+    def _render_horizon_decorations(self, level_spec, sky_height, curve_offset=0):
+        """Render horizon decorations with parallax effect"""
+        horizon_row = sky_height - 1
+        
+        # Parallax: horizon moves slower than road (0.3x speed)
+        parallax_offset = int(curve_offset * 0.3)
+        
+        for decoration in level_spec.sky_config.horizon_decorations:
+            positions = decoration.get('positions', [])
+            art = decoration.get('art', [])
+            
+            for pos in positions:
+                # Apply parallax offset
+                adjusted_pos = pos + parallax_offset
+                
+                # Draw decoration from bottom to top
+                for i, line in enumerate(reversed(art)):
+                    row = horizon_row - i
+                    if 0 <= row < sky_height:
+                        col = adjusted_pos
+                        for j, ch in enumerate(line):
+                            c = col + j
+                            if 0 <= c < self.width and ch != ' ':
+                                try:
+                                    color = curses.color_pair(6) | curses.A_DIM
+                                    self.stdscr.addch(row, c, ch, color)
+                                except:
+                                    pass
 
 
 class SceneryRenderer:

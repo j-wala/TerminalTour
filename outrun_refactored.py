@@ -8,6 +8,8 @@ from rendering import SkyRenderer, SceneryRenderer, CarRenderer, RoadRenderer, B
 from game_state import GameState, TrafficManager, InputHandler
 from ui import HUDRenderer, TitleScreen, GameOverScreen
 from music_generator import MusicGenerator
+from music_theory import generate_level_music
+from transitions import TransitionEffect
 
 
 class OutRunGame:
@@ -31,10 +33,11 @@ class OutRunGame:
         
         # Initialize renderers
         self.sky_renderer = SkyRenderer(stdscr, self.width, self.height)
-        self.background_renderer = BackgroundRenderer(stdscr, self.width, self.height)
+        # self.background_renderer = BackgroundRenderer(stdscr, self.width, self.height)  # Disabled for performance
         self.scenery_renderer = SceneryRenderer(stdscr, self.width, self.height)
         self.road_renderer = RoadRenderer(stdscr, self.width, self.height)
         self.hud_renderer = HUDRenderer(stdscr, self.width, self.height)
+        self.transition_effect = TransitionEffect(stdscr, self.width, self.height)
         
         # Initialize UI screens
         self.title_screen = TitleScreen(stdscr, self.width, self.height)
@@ -67,18 +70,18 @@ class OutRunGame:
             pass
     
     def generate_music(self):
-        """Generate procedural chiptune music with drums and multiple instruments"""
+        """Generate procedural chiptune music using music theory"""
         try:
             music_gen = MusicGenerator(sample_rate=22050)
             
             duration = 4.0
-            bpm = 120
             
-            # Use current level's music notes or defaults
-            melody_notes = self.current_level.music_notes.get('melody', 
-                [523, 659, 784, 659, 523, 392, 523, 659])
-            bass_notes = self.current_level.music_notes.get('bass',
-                [262, 330, 262, 330, 262, 196, 262, 330])
+            # Generate music based on music theory for current level
+            level_music = generate_level_music(self.current_level.name, bpm=120)
+            
+            melody_notes = level_music['melody']
+            bass_notes = level_music['bass']
+            bpm = level_music['bpm']
             
             # Generate rich music with melody, bass, harmony, and drums
             self.sound = music_gen.create_pygame_sound(
@@ -101,17 +104,53 @@ class OutRunGame:
             pass
     
     def check_level_transition(self):
-        """Check and handle level transitions"""
+        """Check and handle level transitions with element-based effects"""
         new_level = get_level_for_distance(self.game_state.distance)
         
         if new_level != self.current_level:
-            self.current_level = new_level
-            self.game_state.level_transition_message = f"ENTERING {new_level.name} ZONE!"
-            self.game_state.level_transition_timer = 100
-            
-            # Clear renderers for new level
-            self.sky_renderer.clear_objects()
-            self.scenery_renderer.clear_objects()
+            # Start transition sequence
+            if self.game_state.transition_stage == 'none':
+                self.game_state.transition_stage = 'horizon_out'
+                self.game_state.transition_progress = 0
+                self.game_state.old_level_color = self.current_level.sky_config.color_pair
+                self.game_state.new_level_color = new_level.sky_config.color_pair
+        
+        # Handle transition stages
+        if self.game_state.transition_stage == 'horizon_out':
+            # Fade out horizon decorations
+            self.game_state.transition_progress += 0.1
+            if self.game_state.transition_progress >= 1.0:
+                self.game_state.transition_stage = 'color_fade'
+                self.game_state.transition_progress = 0
+        
+        elif self.game_state.transition_stage == 'color_fade':
+            # Gradient to new sky color
+            self.game_state.transition_progress += 0.08
+            if self.game_state.transition_progress >= 1.0:
+                # Switch to new level
+                self.current_level = new_level
+                self.game_state.level_transition_message = f"ENTERING {new_level.name} ZONE!"
+                self.game_state.level_transition_timer = 60
+                
+                # Clear renderers for new level
+                self.sky_renderer.clear_objects()
+                self.scenery_renderer.clear_objects()
+                
+                # Regenerate music for new level
+                try:
+                    self.generate_music()
+                except:
+                    pass
+                
+                self.game_state.transition_stage = 'horizon_in'
+                self.game_state.transition_progress = 0
+        
+        elif self.game_state.transition_stage == 'horizon_in':
+            # Fade in new horizon decorations
+            self.game_state.transition_progress += 0.1
+            if self.game_state.transition_progress >= 1.0:
+                self.game_state.transition_stage = 'none'
+                self.game_state.transition_progress = 0
     
     def update_game(self):
         """Update all game logic"""
@@ -146,9 +185,29 @@ class OutRunGame:
         """Render all game elements"""
         self.stdscr.clear()
         
-        # Render in order: sky -> background -> road -> scenery -> cars -> HUD
-        self.sky_renderer.render(self.current_level)
-        self.background_renderer.render(self.current_level, self.game_state.road_offset)
+        # Render in order: sky -> road -> scenery -> cars -> HUD
+        # Get curve offset for parallax
+        curve_offset_at_horizon = self.game_state.get_curve_offset(10)
+        
+        # Handle transition rendering
+        if self.game_state.transition_stage == 'horizon_out':
+            # Render sky without horizon decorations fading out
+            self.sky_renderer.render(self.current_level, curve_offset_at_horizon)
+        elif self.game_state.transition_stage == 'color_fade':
+            # Render gradient between colors
+            self.transition_effect.render_sky_gradient(
+                self.game_state.old_level_color,
+                self.game_state.new_level_color,
+                self.game_state.transition_progress
+            )
+        elif self.game_state.transition_stage == 'horizon_in':
+            # Render sky with new horizon decorations fading in
+            self.sky_renderer.render(self.current_level, curve_offset_at_horizon)
+        else:
+            # Normal rendering with parallax
+            self.sky_renderer.render(self.current_level, curve_offset_at_horizon)
+        
+        # self.background_renderer.render(self.current_level, self.game_state.road_offset)  # Disabled for performance
         self.road_renderer.render(
             self.game_state.get_curve_offset,
             self.game_state.road_offset
