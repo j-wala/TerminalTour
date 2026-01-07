@@ -65,6 +65,7 @@ class OutRunGame:
         
         # Music
         self.sound = None
+        self.music_cache = {}  # Cache generated music by level name
         self.menu_music = None
         self.menu_music_duration = 0
         self.game_over_jingle = None
@@ -228,14 +229,16 @@ class OutRunGame:
             except:
                 pass
     
-    def generate_music(self):
-        """Generate procedural chiptune music using music theory from level config"""
+    def pregenerate_level_music(self, level):
+        """Pre-generate music for a specific level and cache it"""
+        if level.name in self.music_cache:
+            return  # Already cached
+        
         try:
             music_gen = MusicGenerator(sample_rate=22050)
             
-            # Generate music from level's music configuration with 8 bars for longer loops
-            if self.current_level.music_config:
-                level_music = generate_music_from_config(self.current_level.music_config, num_bars=8)
+            if level.music_config:
+                level_music = generate_music_from_config(level.music_config, num_bars=8)
                 
                 melody_notes = level_music['melody']
                 bass_notes = level_music['bass']
@@ -243,13 +246,11 @@ class OutRunGame:
                 drum_pattern = level_music['drum_pattern']
                 groove = level_music['groove']
                 
-                # Calculate duration based on BPM and number of notes (32 eighth notes = 4 bars)
-                beats_per_note = 0.5  # Eighth notes
+                beats_per_note = 0.5
                 num_notes = len(melody_notes)
                 beat_duration = 60.0 / bpm
                 duration = num_notes * beat_duration * beats_per_note
             else:
-                # Fallback if no music config
                 melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
                 bass_notes = [262, 330, 262, 330, 262, 196, 262, 330]
                 bpm = 120
@@ -257,11 +258,10 @@ class OutRunGame:
                 groove = 'straight'
                 duration = 4.0
             
-            # Get current mix levels from sound mixer
             mix_levels = self.sound_mixer.get_mix_levels()
             
-            # Generate rich music with melody, bass, harmony, and drums with groove
-            self.sound = music_gen.create_pygame_sound(
+            # Generate and cache the sound
+            sound = music_gen.create_pygame_sound(
                 melody_notes, 
                 bass_notes, 
                 duration=duration, 
@@ -270,6 +270,24 @@ class OutRunGame:
                 mix_levels=mix_levels,
                 groove=groove
             )
+            
+            self.music_cache[level.name] = (sound, duration)
+        except:
+            pass
+    
+    def generate_music(self):
+        """Load music from cache or generate if not cached"""
+        try:
+            # Check cache first
+            if self.current_level.name in self.music_cache:
+                self.sound, duration = self.music_cache[self.current_level.name]
+            else:
+                # Generate on-demand if not cached
+                self.pregenerate_level_music(self.current_level)
+                if self.current_level.name in self.music_cache:
+                    self.sound, duration = self.music_cache[self.current_level.name]
+                else:
+                    return  # Generation failed
             
             def play_loop():
                 while not self.game_state.game_over:
@@ -371,7 +389,7 @@ class OutRunGame:
                 self.sky_renderer.clear_objects()
                 self.scenery_renderer.clear_objects()
                 
-                # Regenerate music for new level starting at zero volume
+                # Load music from cache (instant, no generation needed)
                 try:
                     self.generate_music()
                     if self.sound:
@@ -517,8 +535,20 @@ class OutRunGame:
         except:
             pass
     
+    def pregenerate_all_music(self):
+        """Pre-generate music for all levels in background thread"""
+        def generate_all():
+            for level in LEVELS:
+                self.pregenerate_level_music(level)
+        
+        music_preload_thread = threading.Thread(target=generate_all, daemon=True)
+        music_preload_thread.start()
+    
     def run(self):
         """Main game loop with menu system"""
+        
+        # Pre-generate all level music in background to prevent slowdowns
+        self.pregenerate_all_music()
         
         while True:
             # Ensure we're in the right mode for menu
