@@ -269,6 +269,9 @@ class OutRunGame:
             def play_loop():
                 while not self.game_state.game_over:
                     if self.game_state.music_enabled and self.sound:
+                        # Stop any previous playback to prevent stacking
+                        self.sound.stop()
+                        # Play the sound
                         self.sound.play()
                     time.sleep(duration)
             
