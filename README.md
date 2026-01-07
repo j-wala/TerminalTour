@@ -1,6 +1,6 @@
 # Terminal Tour 🚗
 
-A retro-style endless racing game built entirely in your terminal with ASCII art!
+A retro-style endless racing game built entirely in your terminal with ASCII art! 
 
 ## Features
 
@@ -20,9 +20,19 @@ A retro-style endless racing game built entirely in your terminal with ASCII art
 
 ## Installation
 
+**Windows**:
 ```bash
 pip install -r requirements.txt
-python outrun_refactored.py
+python terminal_tour.py
+```
+
+**Linux/macOS**:
+```bash
+pip3 install -r requirements.txt
+python3 terminal_tour.py
+# Or make executable:
+chmod +x terminal_tour.py
+./terminal_tour.py
 ```
 
 ## Requirements
@@ -30,7 +40,7 @@ python outrun_refactored.py
 - Python 3.6+
 - pygame (for music)
 - numpy (for audio generation)
-- windows-curses (Windows only)
+- curses (built-in on Linux/macOS, auto-installed on Windows)
 
 Music is optional - the game works without pygame/numpy.
 
