@@ -198,7 +198,7 @@ class SceneryRenderer:
         distant_spawn_rate = 0.3  # Distant objects spawn rate
         
         if len(self.scenery_objects) < max_objects:
-            # Spawn roadside scenery (close to road)
+            # Spawn roadside scenery (close to road) - independent check
             if random.random() < roadside_spawn_rate and level_spec.roadside_scenery:
                 side = random.choice(['left', 'right'])
                 scenery_y = -5
@@ -216,8 +216,8 @@ class SceneryRenderer:
                     'is_distant': False
                 })
             
-            # Spawn distant scenery (far from road)
-            elif random.random() < distant_spawn_rate and level_spec.distant_scenery:
+            # Spawn distant scenery (far from road) - independent check
+            if random.random() < distant_spawn_rate and level_spec.distant_scenery:
                 side = random.choice(['left', 'right'])
                 scenery_y = -5
                 

@@ -296,7 +296,120 @@ NEON_LEVEL = LevelSpec(
     )
 )
 
-LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, HAUNTED_LEVEL, NEON_LEVEL]
+SNOW_LEVEL = LevelSpec(
+    name="ARCTIC",
+    distance_threshold=3000,
+    sky_config=SkyConfig(
+        color_pair=7,  # White/light blue
+        sky_type='overcast',
+        objects=[
+            {'type': 'snowflakes', 'count': 12, 'speed': 0.2}
+        ],
+        background_pattern={'type': 'dots', 'color_pair': 7},
+        horizon_decorations=[
+            {'type': 'mountain', 'positions': [20, 50, 80, 110], 'art': ['/\\', '/  \\', '----']},
+            {'type': 'igloo', 'positions': [35, 95], 'art': [' n ', '(_)']},
+        ]
+    ),
+    roadside_scenery=[
+        SceneryType('pine_tree', ["  ^  ", " /|\\ ", "/___\\"], 3, spawn_weight=2.0),
+        SceneryType('snowman', [" _o_ ", "(oOo)", " ||| "], 7, spawn_weight=1.2),
+        SceneryType('ice_block', [" ### ", "[###]", "[###]"], 4, spawn_weight=1.0),
+    ],
+    distant_scenery=[
+        SceneryType('snowdrift', [" ~~~ ", "~~~~~"], 7, spawn_weight=0.8),
+        SceneryType('icicle', [" ||| "], 4, spawn_weight=0.6),
+        SceneryType('penguin', [" <o> ", " /|\\ "], 7, spawn_weight=0.4),
+    ],
+    music_config=MusicConfig(
+        scale_name='F Major',
+        root_note='F4',
+        scale_type='major',
+        progression_style='pop',
+        melody_style='upbeat',
+        drum_pattern='standard',
+        groove='straight',
+        bpm=125
+    )
+)
+
+JUNGLE_LEVEL = LevelSpec(
+    name="JUNGLE",
+    distance_threshold=3500,
+    sky_config=SkyConfig(
+        color_pair=3,  # Green
+        sky_type='overcast',
+        objects=[
+            {'type': 'birds', 'count': 8, 'speed': 0.25},
+            {'type': 'vines', 'count': 5, 'speed': 0.05}
+        ],
+        background_pattern={'type': 'leaves', 'color_pair': 3},
+        horizon_decorations=[
+            {'type': 'temple', 'positions': [30, 90], 'art': [' A ', '[#]', '[#]', '###']},
+            {'type': 'waterfall', 'positions': [60], 'art': ['|||', '|||', '~~~']},
+        ]
+    ),
+    roadside_scenery=[
+        SceneryType('jungle_tree', ["  Y  ", " {|} ", "{|||}", " ||| "], 3, spawn_weight=2.0),
+        SceneryType('fern', [" \\|/ ", "  |  "], 3, spawn_weight=1.5),
+        SceneryType('vine', ["  ~  ", "  ~  ", "  ~  "], 3, spawn_weight=1.0),
+    ],
+    distant_scenery=[
+        SceneryType('monkey', [" @_@ ", "\\o_o/"], 6, spawn_weight=0.7),
+        SceneryType('flower', [" \\|/ ", " (o) "], 2, spawn_weight=0.6),
+        SceneryType('mushroom', [" _n_ ", "(___)"], 1, spawn_weight=0.5),
+    ],
+    music_config=MusicConfig(
+        scale_name='E Major',
+        root_note='E4',
+        scale_type='major',
+        progression_style='retro',
+        melody_style='upbeat',
+        drum_pattern='fast',
+        groove='triplet',
+        bpm=140
+    )
+)
+
+SPACE_LEVEL = LevelSpec(
+    name="GALAXY",
+    distance_threshold=4000,
+    sky_config=SkyConfig(
+        color_pair=5,  # Purple/magenta
+        sky_type='overcast',
+        objects=[
+            {'type': 'stars', 'count': 20, 'speed': 0.05},
+            {'type': 'planets', 'count': 3, 'speed': 0.02}
+        ],
+        background_pattern={'type': 'stars', 'color_pair': 5},
+        horizon_decorations=[
+            {'type': 'planet', 'positions': [25, 75], 'art': [' O ', '(O)', ' O ']},
+            {'type': 'satellite', 'positions': [40, 100], 'art': ['<|>', ' | ']},
+        ]
+    ),
+    roadside_scenery=[
+        SceneryType('space_rock', [" ___ ", "/ o \\", "\\___/"], 6, spawn_weight=1.8),
+        SceneryType('antenna_dish', [" ((( ", " ||| ", "[###]"], 4, spawn_weight=1.3),
+        SceneryType('alien_plant', ["  @  ", " \\|/ ", "  |  "], 5, spawn_weight=1.0),
+    ],
+    distant_scenery=[
+        SceneryType('alien', [" o_o ", "/[#]\\"], 3, spawn_weight=0.7),
+        SceneryType('crater', ["  _  ", "/ _ \\", "\\___/"], 6, spawn_weight=0.6),
+        SceneryType('ufo', [" <o> ", " === "], 7, spawn_weight=0.4),
+    ],
+    music_config=MusicConfig(
+        scale_name='B Minor',
+        root_note='B4',
+        scale_type='minor',
+        progression_style='pop',
+        melody_style='balanced',
+        drum_pattern='syncopated',
+        groove='straight',
+        bpm=130
+    )
+)
+
+LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, HAUNTED_LEVEL, NEON_LEVEL, SNOW_LEVEL, JUNGLE_LEVEL, SPACE_LEVEL]
 
 
 def get_level_for_distance(distance, settings=None):
