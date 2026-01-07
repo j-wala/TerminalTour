@@ -9,49 +9,54 @@ from music_theory import NOTES, Scale, ChordProgression
 
 
 def generate_menu_music():
-    """Generate upbeat menu music loop using music theory"""
+    """Generate fast, energetic racing-themed menu music"""
     music_gen = MusicGenerator(sample_rate=22050)
     
-    # Upbeat menu melody in C Major using music theory notes
+    # Fast, driving melody in E Major (racing energy!)
     melody_notes = [
-        NOTES['C5'],
-        NOTES['E5'],
-        NOTES['G5'],
-        NOTES['E5'],
-        NOTES['F5'],
-        NOTES['E5'],
-        NOTES['D5'],
-        NOTES['C5'],
+        NOTES['E5'], NOTES['E5'], NOTES['G#5'], NOTES['B5'],
+        NOTES['E5'], NOTES['E5'], NOTES['G#5'], NOTES['B5'],
+        NOTES['D#5'], NOTES['D#5'], NOTES['F#5'], NOTES['A5'],
+        NOTES['C#5'], NOTES['C#5'], NOTES['E5'], NOTES['G#5'],
+        NOTES['E5'], NOTES['B5'], NOTES['G#5'], NOTES['E5'],
+        NOTES['F#5'], NOTES['A5'], NOTES['F#5'], NOTES['D#5'],
+        NOTES['E5'], NOTES['G#5'], NOTES['B5'], NOTES['E6'],
+        NOTES['B5'], NOTES['G#5'], NOTES['E5'], NOTES['E5'],
     ]
     
-    # Simple bass line
+    # Driving bass line (eighth notes for momentum)
     bass_notes = [
-        NOTES['C4'],
-        NOTES['C4'],
-        NOTES['E4'],
-        NOTES['E4'],
-        NOTES['F4'],
-        NOTES['F4'],
-        NOTES['D4'],
-        NOTES['C4'],
+        NOTES['E3'], NOTES['E3'], NOTES['E3'], NOTES['E3'],
+        NOTES['E3'], NOTES['E3'], NOTES['E3'], NOTES['E3'],
+        NOTES['B2'], NOTES['B2'], NOTES['B2'], NOTES['B2'],
+        NOTES['A2'], NOTES['A2'], NOTES['A2'], NOTES['A2'],
+        NOTES['E3'], NOTES['E3'], NOTES['E3'], NOTES['E3'],
+        NOTES['F#3'], NOTES['F#3'], NOTES['F#3'], NOTES['F#3'],
+        NOTES['G#3'], NOTES['G#3'], NOTES['G#3'], NOTES['G#3'],
+        NOTES['E3'], NOTES['E3'], NOTES['E3'], NOTES['E3'],
     ]
     
-    # Energetic drum pattern
+    # Fast, driving drum pattern (16th notes on hi-hat)
     drum_pattern = {
-        'kick': [0, 2, 4, 6],
-        'snare': [1, 3, 5, 7],
-        'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5]
+        'kick': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],  # Every eighth
+        'snare': [1, 3, 5, 7],  # Backbeat
+        'hihat': [i * 0.25 for i in range(32)]  # 16th notes for energy!
     }
     
-    duration = 4.0
-    bpm = 140  # Fast and energetic
+    # Calculate duration based on BPM
+    bpm = 160  # Very fast, racing tempo!
+    beats_per_note = 0.5
+    num_notes = len(melody_notes)
+    beat_duration = 60.0 / bpm
+    duration = num_notes * beat_duration * beats_per_note
     
     sound = music_gen.create_pygame_sound(
         melody_notes,
         bass_notes,
         duration=duration,
         bpm=bpm,
-        drum_pattern=drum_pattern
+        drum_pattern=drum_pattern,
+        groove='straight'  # Fast straight eighths for racing
     )
     
     return sound, duration
@@ -119,49 +124,62 @@ def generate_game_over_jingle():
 
 
 def generate_game_over_music():
-    """Generate somber game over music loop"""
+    """Generate reflective game over music loop (not just jingle)"""
     music_gen = MusicGenerator(sample_rate=22050)
     
-    # Melancholy melody in A Minor using music theory notes
+    # Melancholy but flowing melody in A Minor (4 bars)
     melody_notes = [
-        NOTES['A4'],
-        NOTES['G4'],
-        NOTES['F4'],
-        NOTES['E4'],
-        NOTES['F4'],
-        NOTES['E4'],
-        NOTES['D4'],
-        NOTES['C4'],
+        # Bar 1: Descending sadness
+        NOTES['A4'], NOTES['G4'], NOTES['F4'], NOTES['E4'],
+        NOTES['F4'], NOTES['E4'], NOTES['D4'], NOTES['C4'],
+        # Bar 2: Slight hope
+        NOTES['E4'], NOTES['F4'], NOTES['G4'], NOTES['A4'],
+        NOTES['G4'], NOTES['F4'], NOTES['E4'], NOTES['D4'],
+        # Bar 3: Reflection
+        NOTES['C4'], NOTES['D4'], NOTES['E4'], NOTES['F4'],
+        NOTES['E4'], NOTES['D4'], NOTES['C4'], NOTES['B3'],
+        # Bar 4: Acceptance
+        NOTES['A3'], NOTES['C4'], NOTES['E4'], NOTES['A4'],
+        NOTES['G4'], NOTES['F4'], NOTES['E4'], NOTES['A4'],
     ]
     
-    # Bass line
+    # Bass line with some movement
     bass_notes = [
-        NOTES['A3'],
-        NOTES['G3'],
-        NOTES['F3'],
-        NOTES['E3'],
-        NOTES['F3'],
-        NOTES['E3'],
-        NOTES['D3'],
-        NOTES['C3'],
+        # Bar 1
+        NOTES['A2'], NOTES['A2'], NOTES['F2'], NOTES['F2'],
+        NOTES['E2'], NOTES['E2'], NOTES['E2'], NOTES['E2'],
+        # Bar 2
+        NOTES['A2'], NOTES['A2'], NOTES['G2'], NOTES['G2'],
+        NOTES['F2'], NOTES['F2'], NOTES['E2'], NOTES['E2'],
+        # Bar 3
+        NOTES['C3'], NOTES['C3'], NOTES['C3'], NOTES['C3'],
+        NOTES['E2'], NOTES['E2'], NOTES['E2'], NOTES['E2'],
+        # Bar 4
+        NOTES['A2'], NOTES['A2'], NOTES['A2'], NOTES['A2'],
+        NOTES['E2'], NOTES['E2'], NOTES['A2'], NOTES['A2'],
     ]
     
-    # Slow, minimal drum pattern
+    # Slow, contemplative drum pattern
     drum_pattern = {
         'kick': [0, 4],
         'snare': [2, 6],
-        'hihat': []
+        'hihat': [0, 1, 2, 3, 4, 5, 6, 7]  # Quarter notes for slow pulse
     }
     
-    duration = 4.0
-    bpm = 70  # Very slow and somber
+    # Calculate duration based on BPM
+    bpm = 75  # Slow and reflective
+    beats_per_note = 0.5
+    num_notes = len(melody_notes)
+    beat_duration = 60.0 / bpm
+    duration = num_notes * beat_duration * beats_per_note
     
     sound = music_gen.create_pygame_sound(
         melody_notes,
         bass_notes,
         duration=duration,
         bpm=bpm,
-        drum_pattern=drum_pattern
+        drum_pattern=drum_pattern,
+        groove='straight'  # Contemplative straight timing
     )
     
     return sound, duration

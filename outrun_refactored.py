@@ -98,8 +98,11 @@ class OutRunGame:
         """Initialize menu music"""
         try:
             self.menu_music, self.menu_music_duration = generate_menu_music()
-        except:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Error initializing menu music: {e}", file=sys.stderr)
+            self.menu_music = None
+            self.menu_music_duration = 0
     
     def init_game_over_jingle(self):
         """Initialize game over jingle"""
@@ -112,8 +115,11 @@ class OutRunGame:
         """Initialize game over music"""
         try:
             self.game_over_music, self.game_over_music_duration = generate_game_over_music()
-        except:
-            pass
+        except Exception as e:
+            import sys
+            print(f"Error initializing game over music: {e}", file=sys.stderr)
+            self.game_over_music = None
+            self.game_over_music_duration = 0
     
     def play_menu_music(self):
         """Start menu music loop"""
@@ -361,6 +367,8 @@ class OutRunGame:
         # Check collisions
         if self.game_state.check_collision():
             self.game_state.game_over = True
+            # Flash screen on death
+            self.death_flash()
     
     def render_game(self):
         """Render all game elements"""
@@ -420,6 +428,28 @@ class OutRunGame:
         self.hud_renderer.render(self.game_state, self.current_level.name)
         
         self.stdscr.refresh()
+    
+    def death_flash(self):
+        """Flash screen red when player dies"""
+        try:
+            # Flash red 3 times quickly
+            for _ in range(3):
+                # Fill screen with red
+                for y in range(self.height):
+                    for x in range(self.width - 1):
+                        try:
+                            self.stdscr.addstr(y, x, ' ', curses.color_pair(1) | curses.A_REVERSE)
+                        except:
+                            pass
+                self.stdscr.refresh()
+                time.sleep(0.1)
+                
+                # Clear
+                self.stdscr.clear()
+                self.stdscr.refresh()
+                time.sleep(0.05)
+        except:
+            pass
     
     def run(self):
         """Main game loop with menu system"""
