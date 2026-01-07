@@ -532,6 +532,10 @@ class OutRunGame:
                 self.settings = settings
                 self.game_state.music_enabled = settings.music_enabled
                 
+                # Randomize level order if enabled
+                if settings.randomize_levels:
+                    settings.shuffle_level_order()
+                
                 # Reset game state for new game
                 self.game_state.reset()
                 self.sky_renderer.clear_objects()

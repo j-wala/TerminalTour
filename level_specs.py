@@ -199,7 +199,71 @@ DESERT_LEVEL = LevelSpec(
     )
 )
 
-LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL]
+HAUNTED_LEVEL = LevelSpec(
+    name="HAUNTED",
+    distance_threshold=2000,
+    sky_config=SkyConfig(
+        color_pair=5,  # Purple/dark magenta
+        sky_type='overcast',
+        objects=[
+            {'type': 'moon', 'position': 'top-left'},
+            {'type': 'bats', 'count': 6, 'speed': 0.4}
+        ],
+        background_pattern={'type': 'fog', 'color_pair': 5},
+        horizon_decorations=[
+            {'type': 'mansion', 'positions': [30, 80], 'art': ['^^^', '[#]', '[#]', '###']},
+            {'type': 'tombstone', 'positions': [15, 45, 65, 95], 'art': ['RIP']},
+        ]
+    ),
+    scenery_types=[
+        SceneryType('tombstone', [" RIP ", "|###|", "\\___/"], 6, spawn_weight=2.0),
+        SceneryType('dead_tree', ["  ^  ", " /|\\ ", "/   \\"], 5, spawn_weight=1.5),
+        SceneryType('ghost', [" ooo ", "(o_o)", "  ~  "], 7, spawn_weight=0.8),
+    ],
+    music_config=MusicConfig(
+        scale_name='D Minor',
+        root_note='D4',
+        scale_type='minor',
+        progression_style='blues',
+        melody_style='melancholy',
+        drum_pattern='minimal',
+        groove='shuffle',
+        bpm=95
+    )
+)
+
+NEON_LEVEL = LevelSpec(
+    name="NEON CITY",
+    distance_threshold=2500,
+    sky_config=SkyConfig(
+        color_pair=5,  # Magenta/pink
+        sky_type='overcast',
+        objects=[
+            {'type': 'neon_grid', 'count': 10, 'speed': 0.2}
+        ],
+        background_pattern={'type': 'grid', 'color_pair': 5},
+        horizon_decorations=[
+            {'type': 'neon_tower', 'positions': [20, 40, 60, 80, 100], 'art': ['|||', '[#]', '[#]']},
+        ]
+    ),
+    scenery_types=[
+        SceneryType('neon_sign', ["<##>", "[##]", "<##>"], 5, spawn_weight=1.8),
+        SceneryType('hologram', [" /\\ ", "/  \\", "\\  /"], 4, spawn_weight=1.2),
+        SceneryType('laser_pole', [" ||| ", " ||| ", " ||| "], 6, spawn_weight=1.5),
+    ],
+    music_config=MusicConfig(
+        scale_name='E Minor',
+        root_note='E4',
+        scale_type='minor',
+        progression_style='pop',
+        melody_style='upbeat',
+        drum_pattern='syncopated',
+        groove='straight',
+        bpm=140
+    )
+)
+
+LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, HAUNTED_LEVEL, NEON_LEVEL]
 
 
 def get_level_for_distance(distance, settings=None):
