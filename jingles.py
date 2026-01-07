@@ -5,34 +5,35 @@ Musical jingles and menu music for ASCII OutRun
 import numpy as np
 import pygame
 from music_generator import MusicGenerator
+from music_theory import NOTES, Scale, ChordProgression
 
 
 def generate_menu_music():
-    """Generate upbeat menu music loop"""
+    """Generate upbeat menu music loop using music theory"""
     music_gen = MusicGenerator(sample_rate=22050)
     
-    # Upbeat menu melody in C Major
+    # Upbeat menu melody in C Major using music theory notes
     melody_notes = [
-        523.25,  # C5
-        659.25,  # E5
-        783.99,  # G5
-        659.25,  # E5
-        698.46,  # F5
-        659.25,  # E5
-        587.33,  # D5
-        523.25,  # C5
+        NOTES['C5'],
+        NOTES['E5'],
+        NOTES['G5'],
+        NOTES['E5'],
+        NOTES['F5'],
+        NOTES['E5'],
+        NOTES['D5'],
+        NOTES['C5'],
     ]
     
     # Simple bass line
     bass_notes = [
-        261.63,  # C4
-        261.63,  # C4
-        329.63,  # E4
-        329.63,  # E4
-        349.23,  # F4
-        349.23,  # F4
-        293.66,  # D4
-        261.63,  # C4
+        NOTES['C4'],
+        NOTES['C4'],
+        NOTES['E4'],
+        NOTES['E4'],
+        NOTES['F4'],
+        NOTES['F4'],
+        NOTES['D4'],
+        NOTES['C4'],
     ]
     
     # Energetic drum pattern
@@ -57,31 +58,31 @@ def generate_menu_music():
 
 
 def generate_game_over_jingle():
-    """Generate short game over jingle"""
+    """Generate short game over jingle using music theory"""
     music_gen = MusicGenerator(sample_rate=22050)
     
-    # Descending melody (sad ending)
+    # Descending melody (sad ending) using music theory notes
     melody_notes = [
-        523.25,  # C5
-        493.88,  # B4
-        440.00,  # A4
-        392.00,  # G4
-        349.23,  # F4
-        329.63,  # E4
-        293.66,  # D4
-        261.63,  # C4
+        NOTES['C5'],
+        NOTES['B4'],
+        NOTES['A4'],
+        NOTES['G4'],
+        NOTES['F4'],
+        NOTES['E4'],
+        NOTES['D4'],
+        NOTES['C4'],
     ]
     
     # Bass follows melody
     bass_notes = [
-        261.63,  # C4
-        246.94,  # B3
-        220.00,  # A3
-        196.00,  # G3
-        174.61,  # F3
-        164.81,  # E3
-        146.83,  # D3
-        130.81,  # C3
+        NOTES['C4'],
+        NOTES['B3'],
+        NOTES['A3'],
+        NOTES['G3'],
+        NOTES['F3'],
+        NOTES['E3'],
+        NOTES['D3'],
+        NOTES['C3'],
     ]
     
     # Minimal drums
@@ -117,8 +118,62 @@ def generate_game_over_jingle():
     return sound, duration
 
 
+def generate_game_over_music():
+    """Generate somber game over music loop"""
+    music_gen = MusicGenerator(sample_rate=22050)
+    
+    # Melancholy melody in A Minor using music theory notes
+    melody_notes = [
+        NOTES['A4'],
+        NOTES['G4'],
+        NOTES['F4'],
+        NOTES['E4'],
+        NOTES['F4'],
+        NOTES['E4'],
+        NOTES['D4'],
+        NOTES['C4'],
+    ]
+    
+    # Bass line
+    bass_notes = [
+        NOTES['A3'],
+        NOTES['G3'],
+        NOTES['F3'],
+        NOTES['E3'],
+        NOTES['F3'],
+        NOTES['E3'],
+        NOTES['D3'],
+        NOTES['C3'],
+    ]
+    
+    # Slow, minimal drum pattern
+    drum_pattern = {
+        'kick': [0, 4],
+        'snare': [2, 6],
+        'hihat': []
+    }
+    
+    duration = 4.0
+    bpm = 70  # Very slow and somber
+    
+    sound = music_gen.create_pygame_sound(
+        melody_notes,
+        bass_notes,
+        duration=duration,
+        bpm=bpm,
+        drum_pattern=drum_pattern
+    )
+    
+    return sound, duration
+
+
 def play_jingle_once(sound, duration):
-    """Play a jingle sound once and block until complete"""
+    """Play a jingle sound once"""
     import time
-    sound.play()
-    time.sleep(duration)
+    try:
+        sound.play()
+        # Wait for playback without blocking too long
+        time.sleep(min(duration, 3.0))  # Cap at 3 seconds
+    except Exception as e:
+        print(f"Error playing jingle: {e}")  # Debug
+        pass

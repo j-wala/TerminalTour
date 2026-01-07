@@ -107,29 +107,33 @@ SCALES = {
 
 
 class DrumPattern:
-    """Drum pattern generator for different styles"""
+    """Drum pattern generator for different styles and grooves"""
     
     PATTERNS = {
         'standard': {
             'kick': [0, 2, 4, 6],           # On beats 1 and 3
             'snare': [1, 3, 5, 7],          # On beats 2 and 4
             'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],  # 8th notes
+            'groove': 'straight'
         },
         'fast': {
             'kick': [0, 1, 2, 3, 4, 5, 6, 7],  # Every beat
             'snare': [1, 3, 5, 7],             # Backbeats
             'hihat': [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,
                      4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75],  # 16th notes
+            'groove': 'triplet'
         },
         'syncopated': {
             'kick': [0, 1.5, 2, 4, 5.5, 6],    # Syncopated kicks
             'snare': [1, 3, 5, 7],             # Backbeats
-            'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],
+            'hihat': [0, 0.67, 1.33, 2, 2.67, 3.33, 4, 4.67, 5.33, 6, 6.67, 7.33],  # Swing feel
+            'groove': 'swing'
         },
         'minimal': {
             'kick': [0, 4],                    # Just on 1 and 5
             'snare': [2, 6],                   # Just on 3 and 7
-            'hihat': [0, 1, 2, 3, 4, 5, 6, 7], # Quarter notes
+            'hihat': [0, 1.33, 2.67, 4, 5.33, 6.67],  # Shuffle feel
+            'groove': 'shuffle'
         },
     }
     

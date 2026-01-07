@@ -18,13 +18,15 @@ class GameSettings:
 class MainMenu:
     """Main menu with options and settings"""
     
-    def __init__(self, stdscr, width, height):
+    def __init__(self, stdscr, width, height, sound_mixer=None):
         self.stdscr = stdscr
         self.width = width
         self.height = height
         self.selected_option = 0
-        self.menu_state = 'main'  # 'main', 'settings', 'level_select'
+        self.menu_state = 'main'  # 'main', 'settings', 'level_select', 'mixer'
         self.settings = GameSettings()
+        self.sound_mixer = sound_mixer
+        self.music_changed = False
     
     def show(self):
         """Display and handle main menu"""
@@ -37,7 +39,7 @@ class MainMenu:
                 result = self._show_main_menu()
                 if result == 'start':
                     self.stdscr.nodelay(1)
-                    return 'start', self.settings
+                    return 'start', self.settings, self.music_changed
                 elif result == 'settings':
                     self.menu_state = 'settings'
                     self.selected_option = 0
@@ -49,9 +51,18 @@ class MainMenu:
                 if result == 'back':
                     self.menu_state = 'main'
                     self.selected_option = 0
+                elif result == 'mixer':
+                    self.menu_state = 'mixer'
+                    self.selected_option = 0
             
             elif self.menu_state == 'level_select':
                 result = self._show_level_select()
+                if result == 'back':
+                    self.menu_state = 'settings'
+                    self.selected_option = 0
+            
+            elif self.menu_state == 'mixer':
+                result = self._show_mixer_menu()
                 if result == 'back':
                     self.menu_state = 'settings'
                     self.selected_option = 0
@@ -150,6 +161,7 @@ class MainMenu:
             f"Starting Level: {['Beach', 'City', 'Factory', 'Desert'][self.settings.starting_level]}",
             f"Music: {'ON' if self.settings.music_enabled else 'OFF'}",
             f"Difficulty: {self.settings.difficulty.upper()}",
+            "SOUND MIXER",
             "BACK"
         ]
         
@@ -206,12 +218,21 @@ class MainMenu:
                 idx = difficulties.index(self.settings.difficulty)
                 self.settings.difficulty = difficulties[(idx + 1) % len(difficulties)]
         elif key == ord('\n') or key == ord(' '):
-            if self.selected_option == 3:  # Back
+            if self.selected_option == 3:  # Sound Mixer
+                return 'mixer'
+            elif self.selected_option == 4:  # Back
                 return 'back'
         elif key == 27:  # ESC
             return 'back'
         
         return None
+    
+    def _show_mixer_menu(self):
+        """Show sound mixer menu"""
+        if self.sound_mixer:
+            if self.sound_mixer.show():
+                self.music_changed = True
+        return 'back'
 
 
 class GameOverMenu:

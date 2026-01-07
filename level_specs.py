@@ -7,13 +7,14 @@ import curses
 
 class MusicConfig:
     """Configuration for level music"""
-    def __init__(self, scale_name, root_note, scale_type, progression_style, melody_style, drum_pattern, bpm=120):
+    def __init__(self, scale_name, root_note, scale_type, progression_style, melody_style, drum_pattern, groove='straight', bpm=120):
         self.scale_name = scale_name
         self.root_note = root_note
         self.scale_type = scale_type  # 'major', 'minor', 'diminished'
         self.progression_style = progression_style  # 'pop', 'jazz', 'blues', etc.
         self.melody_style = melody_style  # 'upbeat', 'melancholy', 'balanced'
         self.drum_pattern = drum_pattern  # 'standard', 'fast', 'syncopated', 'minimal'
+        self.groove = groove  # 'straight', 'swing', 'shuffle', 'triplet'
         self.bpm = bpm
 
 class LevelSpec:
@@ -98,6 +99,7 @@ BEACH_LEVEL = LevelSpec(
         progression_style='pop',
         melody_style='upbeat',
         drum_pattern='standard',
+        groove='straight',
         bpm=120
     )
 )
@@ -128,6 +130,7 @@ CITY_LEVEL = LevelSpec(
         progression_style='jazz',
         melody_style='balanced',
         drum_pattern='syncopated',
+        groove='swing',
         bpm=128
     )
 )
@@ -158,6 +161,7 @@ FACTORY_LEVEL = LevelSpec(
         progression_style='blues',
         melody_style='melancholy',
         drum_pattern='minimal',
+        groove='shuffle',
         bpm=110
     )
 )
@@ -190,6 +194,7 @@ DESERT_LEVEL = LevelSpec(
         progression_style='retro',
         melody_style='balanced',
         drum_pattern='fast',
+        groove='triplet',
         bpm=135
     )
 )

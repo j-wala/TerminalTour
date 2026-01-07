@@ -190,8 +190,17 @@ class MusicGenerator:
         
         return harmony * 0.4  # Lower volume for harmony
     
-    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None):
+    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None):
         """Generate complete music track with all instruments"""
+        # Default mix levels
+        if mix_levels is None:
+            mix_levels = {
+                'melody': 0.35,
+                'bass': 0.35,
+                'harmony': 0.15,
+                'drums': 0.25
+            }
+        
         # Generate individual tracks
         melody = self.generate_melody_track(melody_notes, duration)
         bass = self.generate_bass_track(bass_notes, duration)
@@ -207,13 +216,11 @@ class MusicGenerator:
         harmony = np.pad(harmony, (0, max_len - len(harmony)))
         drums = np.pad(drums, (0, max_len - len(drums)))
         
-        # Mix tracks with appropriate levels
-        mixed = (
-            melody * 0.35 +
-            bass * 0.35 +
-            harmony * 0.15 +
-            drums * 0.25
-        ).astype(np.int16)
+        # Mix tracks with custom levels
+        mixed = (melody * mix_levels['melody'] + 
+                bass * mix_levels['bass'] + 
+                harmony * mix_levels['harmony'] + 
+                drums * mix_levels['drums']).astype(np.int16)
         
         # Create stereo by duplicating and adding slight variation
         stereo_left = mixed
@@ -224,7 +231,7 @@ class MusicGenerator:
         
         return stereo
     
-    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None):
+    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None):
         """Create a pygame Sound object from the generated music"""
-        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm, drum_pattern)
+        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm, drum_pattern, mix_levels)
         return pygame.sndarray.make_sound(stereo_audio)

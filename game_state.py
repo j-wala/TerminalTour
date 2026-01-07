@@ -3,6 +3,7 @@ Game state management for ASCII OutRun
 Handles game state, collision detection, and game logic
 """
 
+import curses
 from dataclasses import dataclass
 from typing import List
 
@@ -147,13 +148,11 @@ class TrafficManager:
 
 
 class InputHandler:
-    """Handles player input"""
+    """Handles user input"""
     
     @staticmethod
-    def handle_input(stdscr, game_state, sound_obj=None):
-        """Process player input and return whether to continue"""
-        import curses
-        
+    def handle_input(stdscr, game_state, sound=None):
+        """Process keyboard input - returns False to quit, True to continue"""
         try:
             key = stdscr.getch()
             
@@ -174,9 +173,9 @@ class InputHandler:
             
             if key == ord('m') or key == ord('M'):
                 game_state.music_enabled = not game_state.music_enabled
-                if not game_state.music_enabled and sound_obj:
+                if not game_state.music_enabled and sound:
                     try:
-                        sound_obj.stop()
+                        sound.stop()
                     except:
                         pass
         

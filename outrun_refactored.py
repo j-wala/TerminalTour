@@ -11,7 +11,8 @@ from music_generator import MusicGenerator
 from music_theory import generate_music_from_config
 from transitions import TransitionEffect
 from menu_system import MainMenu, GameOverMenu
-from jingles import generate_menu_music, generate_game_over_jingle, play_jingle_once
+from jingles import generate_menu_music, generate_game_over_jingle, generate_game_over_music, play_jingle_once
+from sound_mixer import SoundMixer
 
 
 class OutRunGame:
@@ -44,7 +45,8 @@ class OutRunGame:
         # Initialize UI screens
         self.title_screen = TitleScreen(stdscr, self.width, self.height)
         self.game_over_screen = GameOverScreen(stdscr, self.width, self.height)
-        self.main_menu = MainMenu(stdscr, self.width, self.height)
+        self.sound_mixer = SoundMixer(stdscr, self.width, self.height)
+        self.main_menu = MainMenu(stdscr, self.width, self.height, self.sound_mixer)
         self.game_over_menu = GameOverMenu(stdscr, self.width, self.height)
         
         # Level tracking
@@ -57,9 +59,21 @@ class OutRunGame:
         self.menu_music_duration = 0
         self.game_over_jingle = None
         self.game_over_jingle_duration = 0
+        self.game_over_music = None
+        self.game_over_music_duration = 0
         self.settings = None
+        self.menu_music_playing = False
+        self.game_over_music_playing = False
+        
+        # Initialize pygame first
+        try:
+            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+        except:
+            pass
+        
         self.init_menu_music()
         self.init_game_over_jingle()
+        self.init_game_over_music()
     
     def _init_colors(self):
         """Initialize color pairs"""
@@ -72,9 +86,8 @@ class OutRunGame:
         curses.init_pair(7, curses.COLOR_BLUE, curses.COLOR_BLACK)
     
     def init_music(self):
-        """Initialize pygame mixer for music"""
+        """Initialize game music"""
         try:
-            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
             self.generate_music()
         except:
             pass
@@ -93,17 +106,54 @@ class OutRunGame:
         except:
             pass
     
+    def init_game_over_music(self):
+        """Initialize game over music"""
+        try:
+            self.game_over_music, self.game_over_music_duration = generate_game_over_music()
+        except:
+            pass
+    
     def play_menu_music(self):
         """Start menu music loop"""
-        if self.menu_music and self.settings and self.settings.music_enabled:
+        if self.menu_music and not self.menu_music_playing:
+            self.menu_music_playing = True
             def menu_loop():
-                while self.game_state.game_over or not hasattr(self.game_state, 'distance'):
-                    if self.settings and self.settings.music_enabled:
-                        self.menu_music.play()
+                while self.menu_music_playing:
+                    self.menu_music.play()
                     time.sleep(self.menu_music_duration)
             
             music_thread = threading.Thread(target=menu_loop, daemon=True)
             music_thread.start()
+    
+    def stop_menu_music(self):
+        """Stop menu music loop"""
+        self.menu_music_playing = False
+        if self.menu_music:
+            try:
+                self.menu_music.stop()
+            except:
+                pass
+    
+    def play_game_over_music(self):
+        """Start game over music loop"""
+        if self.game_over_music and not self.game_over_music_playing:
+            self.game_over_music_playing = True
+            def game_over_loop():
+                while self.game_over_music_playing:
+                    self.game_over_music.play()
+                    time.sleep(self.game_over_music_duration)
+            
+            music_thread = threading.Thread(target=game_over_loop, daemon=True)
+            music_thread.start()
+    
+    def stop_game_over_music(self):
+        """Stop game over music loop"""
+        self.game_over_music_playing = False
+        if self.game_over_music:
+            try:
+                self.game_over_music.stop()
+            except:
+                pass
     
     def play_game_over_jingle(self):
         """Play game over jingle once"""
@@ -139,13 +189,17 @@ class OutRunGame:
                 bpm = 120
                 drum_pattern = None
             
+            # Get current mix levels from sound mixer
+            mix_levels = self.sound_mixer.get_mix_levels()
+            
             # Generate rich music with melody, bass, harmony, and drums
             self.sound = music_gen.create_pygame_sound(
                 melody_notes, 
                 bass_notes, 
                 duration=duration, 
                 bpm=bpm,
-                drum_pattern=drum_pattern
+                drum_pattern=drum_pattern,
+                mix_levels=mix_levels
             )
             
             def play_loop():
@@ -301,8 +355,14 @@ class OutRunGame:
         """Main game loop with menu system"""
         
         while True:
+            # Play menu music
+            self.play_menu_music()
+            
             # Show main menu
-            action, settings = self.main_menu.show()
+            action, settings, music_changed = self.main_menu.show()
+            
+            # Stop menu music when starting game
+            self.stop_menu_music()
             
             if action == 'quit':
                 break
@@ -316,8 +376,9 @@ class OutRunGame:
                     self.current_level = LEVELS[settings.starting_level]
                     self.game_state.distance = LEVELS[settings.starting_level].distance_threshold
                 
-                # Initialize game music
+                # Initialize or regenerate game music
                 self.init_music()
+                self.main_menu.music_changed = False  # Reset flag
                 
                 # Run game
                 if not self._run_game_loop():
@@ -339,7 +400,7 @@ class OutRunGame:
                 
                 # Handle input
                 if not InputHandler.handle_input(self.stdscr, self.game_state, self.sound):
-                    break
+                    return False
                 
                 # Frame timing
                 frame_elapsed = time.time() - frame_start
@@ -348,11 +409,24 @@ class OutRunGame:
                     time.sleep(sleep_time)
             
             else:
+                # Stop game music
+                if self.sound:
+                    try:
+                        self.sound.stop()
+                    except:
+                        pass
+                
                 # Play game over jingle
                 self.play_game_over_jingle()
                 
+                # Start game over music
+                self.play_game_over_music()
+                
                 # Game over menu
                 action = self.game_over_menu.show(self.game_state.score, self.game_state.distance)
+                
+                # Stop game over music
+                self.stop_game_over_music()
                 
                 if action == 'restart':
                     self.game_state.reset()
