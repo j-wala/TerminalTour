@@ -18,7 +18,7 @@ class GameSettings:
 class MainMenu:
     """Main menu with options and settings"""
     
-    def __init__(self, stdscr, width, height, sound_mixer=None):
+    def __init__(self, stdscr, width, height, sound_mixer=None, game=None):
         self.stdscr = stdscr
         self.width = width
         self.height = height
@@ -27,6 +27,7 @@ class MainMenu:
         self.settings = GameSettings()
         self.sound_mixer = sound_mixer
         self.music_changed = False
+        self.game = game  # Reference to game object for music control
     
     def show(self):
         """Display and handle main menu"""
@@ -204,6 +205,12 @@ class MainMenu:
                 self.settings.starting_level = (self.settings.starting_level - 1) % 4
             elif self.selected_option == 1:  # Music
                 self.settings.music_enabled = not self.settings.music_enabled
+                # Control menu music based on setting
+                if self.game:
+                    if self.settings.music_enabled:
+                        self.game.play_menu_music()
+                    else:
+                        self.game.stop_menu_music()
             elif self.selected_option == 2:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)
@@ -213,6 +220,12 @@ class MainMenu:
                 self.settings.starting_level = (self.settings.starting_level + 1) % 4
             elif self.selected_option == 1:  # Music
                 self.settings.music_enabled = not self.settings.music_enabled
+                # Control menu music based on setting
+                if self.game:
+                    if self.settings.music_enabled:
+                        self.game.play_menu_music()
+                    else:
+                        self.game.stop_menu_music()
             elif self.selected_option == 2:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)

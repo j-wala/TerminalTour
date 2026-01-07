@@ -46,7 +46,7 @@ class OutRunGame:
         self.title_screen = TitleScreen(stdscr, self.width, self.height)
         self.game_over_screen = GameOverScreen(stdscr, self.width, self.height)
         self.sound_mixer = SoundMixer(stdscr, self.width, self.height)
-        self.main_menu = MainMenu(stdscr, self.width, self.height, self.sound_mixer)
+        self.main_menu = MainMenu(stdscr, self.width, self.height, self.sound_mixer, game=self)
         self.game_over_menu = GameOverMenu(stdscr, self.width, self.height)
         
         # Level tracking
@@ -115,11 +115,21 @@ class OutRunGame:
     
     def play_menu_music(self):
         """Start menu music loop"""
+        # Check if music is enabled
+        if not (self.settings and self.settings.music_enabled):
+            return
+        
         if self.menu_music and not self.menu_music_playing:
+            # Stop any other music first
+            self.stop_game_music()
+            self.stop_game_over_music()
+            
             self.menu_music_playing = True
             def menu_loop():
                 while self.menu_music_playing:
-                    self.menu_music.play()
+                    # Check settings before playing
+                    if self.menu_music_playing and self.settings and self.settings.music_enabled:
+                        self.menu_music.play()
                     time.sleep(self.menu_music_duration)
             
             music_thread = threading.Thread(target=menu_loop, daemon=True)
@@ -128,6 +138,7 @@ class OutRunGame:
     def stop_menu_music(self):
         """Stop menu music loop"""
         self.menu_music_playing = False
+        time.sleep(0.1)  # Give thread time to stop
         if self.menu_music:
             try:
                 self.menu_music.stop()
@@ -136,11 +147,21 @@ class OutRunGame:
     
     def play_game_over_music(self):
         """Start game over music loop"""
+        # Check if music is enabled
+        if not (self.settings and self.settings.music_enabled):
+            return
+        
         if self.game_over_music and not self.game_over_music_playing:
+            # Stop any other music first
+            self.stop_game_music()
+            self.stop_menu_music()
+            
             self.game_over_music_playing = True
             def game_over_loop():
                 while self.game_over_music_playing:
-                    self.game_over_music.play()
+                    # Check settings before playing
+                    if self.game_over_music_playing and self.settings and self.settings.music_enabled:
+                        self.game_over_music.play()
                     time.sleep(self.game_over_music_duration)
             
             music_thread = threading.Thread(target=game_over_loop, daemon=True)
@@ -149,9 +170,18 @@ class OutRunGame:
     def stop_game_over_music(self):
         """Stop game over music loop"""
         self.game_over_music_playing = False
+        time.sleep(0.1)  # Give thread time to stop
         if self.game_over_music:
             try:
                 self.game_over_music.stop()
+            except:
+                pass
+    
+    def stop_game_music(self):
+        """Stop game music"""
+        if self.sound:
+            try:
+                self.sound.stop()
             except:
                 pass
     
@@ -203,8 +233,8 @@ class OutRunGame:
             )
             
             def play_loop():
-                while True:
-                    if self.game_state.music_enabled:
+                while not self.game_state.game_over:
+                    if self.game_state.music_enabled and self.sound:
                         self.sound.play()
                     time.sleep(duration)
             
@@ -355,6 +385,9 @@ class OutRunGame:
         """Main game loop with menu system"""
         
         while True:
+            # Ensure we're in the right mode for menu
+            self.stdscr.nodelay(0)  # Wait for input in menu
+            
             # Play menu music
             self.play_menu_music()
             
@@ -377,6 +410,7 @@ class OutRunGame:
                     self.game_state.distance = LEVELS[settings.starting_level].distance_threshold
                 
                 # Initialize or regenerate game music
+                self.stdscr.nodelay(1)  # Non-blocking mode for gameplay
                 self.init_music()
                 self.main_menu.music_changed = False  # Reset flag
                 
@@ -410,11 +444,10 @@ class OutRunGame:
             
             else:
                 # Stop game music
-                if self.sound:
-                    try:
-                        self.sound.stop()
-                    except:
-                        pass
+                self.stop_game_music()
+                
+                # Switch to blocking mode for menu
+                self.stdscr.nodelay(0)
                 
                 # Play game over jingle
                 self.play_game_over_jingle()
@@ -429,6 +462,7 @@ class OutRunGame:
                 self.stop_game_over_music()
                 
                 if action == 'restart':
+                    # Reset game state
                     self.game_state.reset()
                     self.sky_renderer.clear_objects()
                     self.scenery_renderer.clear_objects()
@@ -440,8 +474,14 @@ class OutRunGame:
                     else:
                         self.current_level = LEVELS[0]
                     
+                    # Switch back to non-blocking mode
+                    self.stdscr.nodelay(1)
+                    
                     # Regenerate music
                     self.init_music()
+                    
+                    # Continue game loop
+                    continue
                 elif action == 'menu':
                     return True  # Return to main menu
                 elif action == 'quit':
