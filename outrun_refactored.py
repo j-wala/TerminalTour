@@ -10,6 +10,8 @@ from ui import HUDRenderer, TitleScreen, GameOverScreen
 from music_generator import MusicGenerator
 from music_theory import generate_music_from_config
 from transitions import TransitionEffect
+from menu_system import MainMenu, GameOverMenu
+from jingles import generate_menu_music, generate_game_over_jingle, play_jingle_once
 
 
 class OutRunGame:
@@ -42,6 +44,8 @@ class OutRunGame:
         # Initialize UI screens
         self.title_screen = TitleScreen(stdscr, self.width, self.height)
         self.game_over_screen = GameOverScreen(stdscr, self.width, self.height)
+        self.main_menu = MainMenu(stdscr, self.width, self.height)
+        self.game_over_menu = GameOverMenu(stdscr, self.width, self.height)
         
         # Level tracking
         self.current_level = LEVELS[0]
@@ -49,7 +53,13 @@ class OutRunGame:
         
         # Music
         self.sound = None
-        self.init_music()
+        self.menu_music = None
+        self.menu_music_duration = 0
+        self.game_over_jingle = None
+        self.game_over_jingle_duration = 0
+        self.settings = None
+        self.init_menu_music()
+        self.init_game_over_jingle()
     
     def _init_colors(self):
         """Initialize color pairs"""
@@ -68,6 +78,44 @@ class OutRunGame:
             self.generate_music()
         except:
             pass
+    
+    def init_menu_music(self):
+        """Initialize menu music"""
+        try:
+            self.menu_music, self.menu_music_duration = generate_menu_music()
+        except:
+            pass
+    
+    def init_game_over_jingle(self):
+        """Initialize game over jingle"""
+        try:
+            self.game_over_jingle, self.game_over_jingle_duration = generate_game_over_jingle()
+        except:
+            pass
+    
+    def play_menu_music(self):
+        """Start menu music loop"""
+        if self.menu_music and self.settings and self.settings.music_enabled:
+            def menu_loop():
+                while self.game_state.game_over or not hasattr(self.game_state, 'distance'):
+                    if self.settings and self.settings.music_enabled:
+                        self.menu_music.play()
+                    time.sleep(self.menu_music_duration)
+            
+            music_thread = threading.Thread(target=menu_loop, daemon=True)
+            music_thread.start()
+    
+    def play_game_over_jingle(self):
+        """Play game over jingle once"""
+        if self.game_over_jingle and self.settings and self.settings.music_enabled:
+            try:
+                # Stop game music
+                if self.sound:
+                    self.sound.stop()
+                # Play jingle
+                play_jingle_once(self.game_over_jingle, self.game_over_jingle_duration)
+            except:
+                pass
     
     def generate_music(self):
         """Generate procedural chiptune music using music theory from level config"""
@@ -250,9 +298,33 @@ class OutRunGame:
         self.stdscr.refresh()
     
     def run(self):
-        """Main game loop"""
-        self.title_screen.show()
+        """Main game loop with menu system"""
         
+        while True:
+            # Show main menu
+            action, settings = self.main_menu.show()
+            
+            if action == 'quit':
+                break
+            
+            if action == 'start':
+                self.settings = settings
+                self.game_state.music_enabled = settings.music_enabled
+                
+                # Set starting level based on settings
+                if settings.starting_level > 0:
+                    self.current_level = LEVELS[settings.starting_level]
+                    self.game_state.distance = LEVELS[settings.starting_level].distance_threshold
+                
+                # Initialize game music
+                self.init_music()
+                
+                # Run game
+                if not self._run_game_loop():
+                    break
+    
+    def _run_game_loop(self):
+        """Internal game loop - returns False to quit, True to continue"""
         frame_time = 0.05
         
         while True:
@@ -276,17 +348,30 @@ class OutRunGame:
                     time.sleep(sleep_time)
             
             else:
-                # Game over screen
-                self.game_over_screen.show(self.game_state.score, self.game_state.distance)
+                # Play game over jingle
+                self.play_game_over_jingle()
                 
-                action = self.game_over_screen.handle_input(self.stdscr)
+                # Game over menu
+                action = self.game_over_menu.show(self.game_state.score, self.game_state.distance)
+                
                 if action == 'restart':
                     self.game_state.reset()
                     self.sky_renderer.clear_objects()
                     self.scenery_renderer.clear_objects()
-                    self.current_level = LEVELS[0]
+                    
+                    # Reset to configured starting level
+                    if self.settings and self.settings.starting_level > 0:
+                        self.current_level = LEVELS[self.settings.starting_level]
+                        self.game_state.distance = LEVELS[self.settings.starting_level].distance_threshold
+                    else:
+                        self.current_level = LEVELS[0]
+                    
+                    # Regenerate music
+                    self.init_music()
+                elif action == 'menu':
+                    return True  # Return to main menu
                 elif action == 'quit':
-                    break
+                    return False  # Exit game
 
 
 def main(stdscr):

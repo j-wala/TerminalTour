@@ -148,7 +148,7 @@ class MusicGenerator:
             if beat_pos < len(drum_track):
                 hihat = self.generate_hihat()
                 end_pos = min(beat_pos + len(hihat), len(drum_track))
-                drum_track[beat_pos:end_pos] += hihat[:end_pos - hihat_pos]
+                drum_track[beat_pos:end_pos] += hihat[:end_pos - beat_pos]
         
         return drum_track
     
