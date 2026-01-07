@@ -54,9 +54,9 @@ class CarModel:
 PLAYER_CAR = CarModel(
     name="player",
     art=[
-        " _=_ ",
-        "[###]",
-        " | | "
+        " ____ ",
+        "|####|",
+        "=O==O="
     ],
     color_pair=4
 )
