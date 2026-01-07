@@ -212,24 +212,27 @@ class OutRunGame:
                 bass_notes = level_music['bass']
                 bpm = level_music['bpm']
                 drum_pattern = level_music['drum_pattern']
+                groove = level_music['groove']
             else:
                 # Fallback if no music config
                 melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
                 bass_notes = [262, 330, 262, 330, 262, 196, 262, 330]
                 bpm = 120
                 drum_pattern = None
+                groove = 'straight'
             
             # Get current mix levels from sound mixer
             mix_levels = self.sound_mixer.get_mix_levels()
             
-            # Generate rich music with melody, bass, harmony, and drums
+            # Generate rich music with melody, bass, harmony, and drums with groove
             self.sound = music_gen.create_pygame_sound(
                 melody_notes, 
                 bass_notes, 
                 duration=duration, 
                 bpm=bpm,
                 drum_pattern=drum_pattern,
-                mix_levels=mix_levels
+                mix_levels=mix_levels,
+                groove=groove
             )
             
             def play_loop():
@@ -258,11 +261,23 @@ class OutRunGame:
         
         # Handle transition stages
         if self.game_state.transition_stage == 'horizon_out':
-            # Fade out horizon decorations
+            # Fade out horizon decorations and music
             self.game_state.transition_progress += 0.1
+            
+            # Fade out music volume
+            if self.sound:
+                fade_volume = 1.0 - self.game_state.transition_progress
+                try:
+                    self.sound.set_volume(max(0.0, fade_volume))
+                except:
+                    pass
+            
             if self.game_state.transition_progress >= 1.0:
                 self.game_state.transition_stage = 'color_fade'
                 self.game_state.transition_progress = 0
+                
+                # Stop old music
+                self.stop_game_music()
         
         elif self.game_state.transition_stage == 'color_fade':
             # Gradient to new sky color
@@ -277,9 +292,11 @@ class OutRunGame:
                 self.sky_renderer.clear_objects()
                 self.scenery_renderer.clear_objects()
                 
-                # Regenerate music for new level
+                # Regenerate music for new level (starts at 0 volume)
                 try:
                     self.generate_music()
+                    if self.sound:
+                        self.sound.set_volume(0.0)  # Start silent, will fade in
                 except:
                     pass
                 
@@ -287,11 +304,27 @@ class OutRunGame:
                 self.game_state.transition_progress = 0
         
         elif self.game_state.transition_stage == 'horizon_in':
-            # Fade in new horizon decorations
+            # Fade in new horizon decorations and music
             self.game_state.transition_progress += 0.1
+            
+            # Fade in music volume
+            if self.sound:
+                fade_volume = self.game_state.transition_progress
+                try:
+                    self.sound.set_volume(min(1.0, fade_volume))
+                except:
+                    pass
+            
             if self.game_state.transition_progress >= 1.0:
                 self.game_state.transition_stage = 'none'
                 self.game_state.transition_progress = 0
+                
+                # Ensure volume is at full
+                if self.sound:
+                    try:
+                        self.sound.set_volume(1.0)
+                    except:
+                        pass
     
     def update_game(self):
         """Update all game logic"""

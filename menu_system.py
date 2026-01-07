@@ -45,7 +45,7 @@ class MainMenu:
                     self.menu_state = 'settings'
                     self.selected_option = 0
                 elif result == 'quit':
-                    return 'quit', None
+                    return 'quit', None, False
             
             elif self.menu_state == 'settings':
                 result = self._show_settings_menu()

@@ -12,6 +12,12 @@ class MusicGenerator:
     
     def __init__(self, sample_rate=22050):
         self.sample_rate = sample_rate
+        self.groove_timing = {
+            'straight': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0],  # Equal timing
+            'swing': [1.33, 0.67, 1.33, 0.67, 1.33, 0.67, 1.33, 0.67],  # Swing 2:1 ratio
+            'shuffle': [1.5, 0.5, 1.5, 0.5, 1.5, 0.5, 1.5, 0.5],  # Triplet shuffle
+            'triplet': [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]  # Straight for now
+        }
     
     def generate_square_wave(self, freq, duration):
         """Generate a square wave (classic chiptune sound)"""
@@ -152,45 +158,113 @@ class MusicGenerator:
         
         return drum_track
     
-    def generate_melody_track(self, notes, duration):
-        """Generate melody using square wave"""
-        note_duration = duration / len(notes)
-        melody = np.array([], dtype=np.int16)
+    def apply_groove_timing(self, base_duration, note_index, groove='straight'):
+        """Apply groove timing to note duration"""
+        import random
         
-        for note in notes:
-            wave = self.generate_square_wave(note, note_duration)
+        timing_pattern = self.groove_timing.get(groove, self.groove_timing['straight'])
+        timing_multiplier = timing_pattern[note_index % len(timing_pattern)]
+        
+        # Add slight randomization (±5%) for human feel
+        randomization = random.uniform(0.95, 1.05)
+        
+        return base_duration * timing_multiplier * randomization
+    
+    def generate_melody_track(self, notes, duration, groove='straight'):
+        """Generate melody using square wave with groove and timing variation"""
+        import random
+        
+        base_duration = duration / len(notes)
+        melody = np.array([], dtype=np.int16)
+        total_time = 0
+        
+        for i, note in enumerate(notes):
+            # Apply groove timing
+            note_duration = self.apply_groove_timing(base_duration, i, groove)
+            
+            # Randomize note length (articulation) - some notes shorter for staccato feel
+            articulation = random.choice([0.7, 0.8, 0.9, 0.95, 1.0, 1.0])  # Weighted toward full length
+            actual_note_duration = note_duration * articulation
+            
+            # Generate note
+            wave = self.generate_square_wave(note, actual_note_duration)
             wave = self.apply_envelope(wave, attack=0.01, decay=0.1, sustain=0.6, release=0.2)
+            
+            # Add silence to fill remainder if note was shortened
+            if articulation < 1.0:
+                silence_duration = note_duration - actual_note_duration
+                silence = np.zeros(int(self.sample_rate * silence_duration), dtype=np.int16)
+                wave = np.concatenate([wave, silence])
+            
             melody = np.concatenate([melody, wave])
+            total_time += note_duration
         
         return melody
     
-    def generate_bass_track(self, notes, duration):
-        """Generate bass using triangle wave"""
-        note_duration = duration / len(notes)
-        bass = np.array([], dtype=np.int16)
+    def generate_bass_track(self, notes, duration, groove='straight'):
+        """Generate bass using triangle wave with groove and timing variation"""
+        import random
         
-        for note in notes:
-            wave = self.generate_triangle_wave(note, note_duration)
+        base_duration = duration / len(notes)
+        bass = np.array([], dtype=np.int16)
+        total_time = 0
+        
+        for i, note in enumerate(notes):
+            # Apply groove timing
+            note_duration = self.apply_groove_timing(base_duration, i, groove)
+            
+            # Bass can have different articulation patterns
+            # Sometimes short and punchy, sometimes sustained
+            articulation_options = [0.6, 0.7, 0.8, 0.9, 1.0, 1.0, 1.0]  # More sustained notes
+            articulation = random.choice(articulation_options)
+            actual_note_duration = note_duration * articulation
+            
+            # Generate note
+            wave = self.generate_triangle_wave(note, actual_note_duration)
             wave = self.apply_envelope(wave, attack=0.02, decay=0.05, sustain=0.8, release=0.1)
+            
+            # Add silence to fill remainder if note was shortened
+            if articulation < 1.0:
+                silence_duration = note_duration - actual_note_duration
+                silence = np.zeros(int(self.sample_rate * silence_duration), dtype=np.int16)
+                wave = np.concatenate([wave, silence])
+            
             bass = np.concatenate([bass, wave])
+            total_time += note_duration
         
         return bass
     
-    def generate_harmony_track(self, melody_notes, duration):
-        """Generate harmony (third above melody)"""
-        note_duration = duration / len(melody_notes)
+    def generate_harmony_track(self, melody_notes, duration, groove='straight'):
+        """Generate harmony (third above melody) with groove"""
+        import random
+        
+        base_duration = duration / len(melody_notes)
         harmony = np.array([], dtype=np.int16)
         
-        for note in melody_notes:
+        for i, note in enumerate(melody_notes):
+            # Apply groove timing
+            note_duration = self.apply_groove_timing(base_duration, i, groove)
+            
+            # Harmony typically more sustained
+            articulation = random.choice([0.9, 0.95, 1.0, 1.0])
+            actual_note_duration = note_duration * articulation
+            
             # Third above (multiply by 1.26 for major third)
             harmony_freq = note * 1.26
-            wave = self.generate_sawtooth_wave(harmony_freq, note_duration)
+            wave = self.generate_sawtooth_wave(harmony_freq, actual_note_duration)
             wave = self.apply_envelope(wave, attack=0.02, decay=0.1, sustain=0.4, release=0.3)
+            
+            # Add silence if needed
+            if articulation < 1.0:
+                silence_duration = note_duration - actual_note_duration
+                silence = np.zeros(int(self.sample_rate * silence_duration), dtype=np.int16)
+                wave = np.concatenate([wave, silence])
+            
             harmony = np.concatenate([harmony, wave])
         
         return harmony * 0.4  # Lower volume for harmony
     
-    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None):
+    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None, groove='straight'):
         """Generate complete music track with all instruments"""
         # Default mix levels
         if mix_levels is None:
@@ -201,10 +275,10 @@ class MusicGenerator:
                 'drums': 0.25
             }
         
-        # Generate individual tracks
-        melody = self.generate_melody_track(melody_notes, duration)
-        bass = self.generate_bass_track(bass_notes, duration)
-        harmony = self.generate_harmony_track(melody_notes, duration)
+        # Generate individual tracks with groove
+        melody = self.generate_melody_track(melody_notes, duration, groove)
+        bass = self.generate_bass_track(bass_notes, duration, groove)
+        harmony = self.generate_harmony_track(melody_notes, duration, groove)
         drums = self.generate_drum_pattern(duration, bpm, drum_pattern)
         
         # Ensure all tracks are the same length
@@ -231,7 +305,7 @@ class MusicGenerator:
         
         return stereo
     
-    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None):
+    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None, groove='straight'):
         """Create a pygame Sound object from the generated music"""
-        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm, drum_pattern, mix_levels)
+        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm, drum_pattern, mix_levels, groove)
         return pygame.sndarray.make_sound(stereo_audio)

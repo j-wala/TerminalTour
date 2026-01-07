@@ -272,5 +272,6 @@ def generate_music_from_config(music_config):
         'bass': bass,
         'scale': scale,
         'bpm': music_config.bpm,
-        'drum_pattern': drum_pattern
+        'drum_pattern': drum_pattern,
+        'groove': music_config.groove
     }
