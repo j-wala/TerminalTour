@@ -193,14 +193,32 @@ class OutRunGame:
             except:
                 pass
     
+    def stop_all_music(self):
+        """Stop all music and audio to prevent bleeding"""
+        # Stop game music
+        self.stop_game_music()
+        # Stop menu music
+        self.stop_menu_music()
+        # Stop game over music
+        self.stop_game_over_music()
+        
+        # Stop pygame mixer channels
+        try:
+            pygame.mixer.stop()
+        except:
+            pass
+    
     def play_game_over_jingle(self):
         """Play game over jingle once"""
         if self.game_over_jingle and self.settings and self.settings.music_enabled:
             try:
-                # Stop game music
-                if self.sound:
-                    self.sound.stop()
-                # Play jingle
+                # Stop ALL music first to prevent bleeding
+                self.stop_all_music()
+                
+                # Wait for audio to clear
+                time.sleep(0.1)
+                
+                # Play jingle (play_jingle_once already waits for completion)
                 play_jingle_once(self.game_over_jingle, self.game_over_jingle_duration)
             except:
                 pass
@@ -474,10 +492,18 @@ class OutRunGame:
                 self.settings = settings
                 self.game_state.music_enabled = settings.music_enabled
                 
+                # Reset game state for new game
+                self.game_state.reset()
+                self.sky_renderer.clear_objects()
+                self.scenery_renderer.clear_objects()
+                
                 # Set starting level based on settings
                 if settings.starting_level > 0:
                     self.current_level = LEVELS[settings.starting_level]
                     self.game_state.distance = LEVELS[settings.starting_level].distance_threshold
+                else:
+                    self.current_level = LEVELS[0]
+                    self.game_state.distance = 0
                 
                 # Initialize or regenerate game music
                 self.stdscr.nodelay(1)  # Non-blocking mode for gameplay
@@ -513,16 +539,13 @@ class OutRunGame:
                     time.sleep(sleep_time)
             
             else:
-                # Stop game music
-                self.stop_game_music()
-                
                 # Switch to blocking mode for menu
                 self.stdscr.nodelay(0)
                 
-                # Play game over jingle
+                # Play game over jingle (stops all music internally)
                 self.play_game_over_jingle()
                 
-                # Start game over music
+                # Start game over music (jingle is finished now)
                 self.play_game_over_music()
                 
                 # Game over menu
@@ -543,12 +566,16 @@ class OutRunGame:
                         self.game_state.distance = LEVELS[self.settings.starting_level].distance_threshold
                     else:
                         self.current_level = LEVELS[0]
+                        self.game_state.distance = 0
                     
                     # Switch back to non-blocking mode
                     self.stdscr.nodelay(1)
                     
                     # Regenerate music
                     self.init_music()
+                    
+                    # Small delay to ensure clean state
+                    time.sleep(0.1)
                     
                     # Continue game loop
                     continue

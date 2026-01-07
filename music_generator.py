@@ -20,9 +20,13 @@ class MusicGenerator:
         }
     
     def generate_square_wave(self, freq, duration):
-        """Generate a square wave (classic chiptune sound)"""
+        """Generate a square wave with subtle vibrato (classic chiptune sound)"""
         t = np.linspace(0, duration, int(self.sample_rate * duration))
-        wave = np.sign(np.sin(2 * np.pi * freq * t))
+        
+        # Add subtle vibrato (5Hz modulation, 0.3% depth)
+        vibrato = 1.0 + 0.003 * np.sin(2 * np.pi * 5 * t)
+        wave = np.sign(np.sin(2 * np.pi * freq * vibrato * t))
+        
         return (wave * 8192).astype(np.int16)
     
     def generate_triangle_wave(self, freq, duration):
@@ -242,7 +246,7 @@ class MusicGenerator:
         return bass
     
     def generate_harmony_track(self, melody_notes, duration, groove='straight', bpm=120):
-        """Generate harmony (third above melody) with groove synced to BPM"""
+        """Generate richer chord-based harmony with groove synced to BPM"""
         import random
         
         # Calculate base note duration from BPM (eighth notes)
@@ -257,10 +261,20 @@ class MusicGenerator:
             articulation = random.choice([0.9, 0.95, 1.0, 1.0])
             actual_note_duration = note_duration * articulation
             
-            # Third above (multiply by 1.26 for major third)
-            harmony_freq = note * 1.26
-            wave = self.generate_sawtooth_wave(harmony_freq, actual_note_duration)
-            wave = self.apply_envelope(wave, attack=0.02, decay=0.1, sustain=0.4, release=0.3)
+            # Create chord harmony (third + fifth for richer sound)
+            third = note * 1.26  # Major third
+            fifth = note * 1.498  # Perfect fifth
+            
+            # Generate both harmony notes
+            wave_third = self.generate_sawtooth_wave(third, actual_note_duration)
+            wave_fifth = self.generate_triangle_wave(fifth, actual_note_duration)  # Different timbre
+            
+            # Apply envelopes
+            wave_third = self.apply_envelope(wave_third, attack=0.02, decay=0.1, sustain=0.5, release=0.3)
+            wave_fifth = self.apply_envelope(wave_fifth, attack=0.03, decay=0.12, sustain=0.6, release=0.25)
+            
+            # Mix chord notes (third louder than fifth)
+            wave = (wave_third * 0.6 + wave_fifth * 0.4).astype(np.int16)
             
             # Add silence if needed
             if articulation < 1.0:
@@ -270,7 +284,7 @@ class MusicGenerator:
             
             harmony = np.concatenate([harmony, wave])
         
-        return harmony * 0.4  # Lower volume for harmony
+        return harmony * 0.35  # Slightly higher volume for richer harmony
     
     def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None, mix_levels=None, groove='straight'):
         """Generate complete music track with all instruments"""

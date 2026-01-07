@@ -178,42 +178,51 @@ class ChordProgression:
     }
     
     @staticmethod
-    def generate_melody(scale, num_notes=8, style='upbeat'):
-        """Generate a melodic sequence using scale"""
+    def generate_melody(scale, num_notes, style='balanced'):
+        """Generate a melody with better musical phrasing and contour"""
         notes = scale.get_notes()
         melody = []
         
+        # Start on root or fifth for strong opening
+        current_idx = random.choice([0, 4]) if len(notes) > 4 else 0
+        
+        # Determine tendency based on style
         if style == 'upbeat':
-            # Tend toward higher notes, more jumps
-            for _ in range(num_notes):
-                if random.random() < 0.3:
-                    # Jump
-                    melody.append(random.choice(notes))
+            # Energetic with leaps and emphasis on higher notes
+            for i in range(num_notes):
+                # Create phrase structure (4-bar phrases)
+                phrase_pos = i % 8
+                
+                if phrase_pos == 0 or phrase_pos == 4:  # Strong beats
+                    current_idx = random.choice([0, 2, 4])  # Root, third, fifth
+                elif phrase_pos == 7:  # End of phrase - resolve
+                    current_idx = 0  # Back to root
                 else:
-                    # Step
-                    if len(melody) > 0:
-                        current_idx = notes.index(melody[-1]) if melody[-1] in notes else 0
-                        step = random.choice([-1, 0, 1, 2])
-                        new_idx = (current_idx + step) % len(notes)
-                        melody.append(notes[new_idx])
+                    # Move by step (70%) or leap (30%)
+                    if random.random() < 0.7:
+                        current_idx = max(0, min(len(notes) - 1, current_idx + random.choice([-1, 1, 2])))
                     else:
-                        melody.append(notes[0])
+                        current_idx = random.choice(range(len(notes) // 2, len(notes)))  # Upper range
+                
+                melody.append(notes[current_idx])
         
         elif style == 'melancholy':
-            # Tend toward lower notes, more steps
-            for _ in range(num_notes):
-                if random.random() < 0.1:
-                    # Jump down
-                    melody.append(random.choice(notes[:4]))
+            # Descending contours, minor emphasis
+            for i in range(num_notes):
+                phrase_pos = i % 8
+                
+                if phrase_pos == 0:  # Start of phrase
+                    current_idx = random.choice([4, 5, 6])  # Start higher
+                elif phrase_pos == 7:  # End of phrase
+                    current_idx = random.choice([0, 1, 2])  # Resolve lower
                 else:
-                    # Step
-                    if len(melody) > 0:
-                        current_idx = notes.index(melody[-1]) if melody[-1] in notes else 0
-                        step = random.choice([-1, 0, 1])
-                        new_idx = max(0, (current_idx + step) % len(notes))
-                        melody.append(notes[new_idx])
+                    # Gentle descent with occasional rises
+                    if random.random() < 0.7:
+                        current_idx = max(0, current_idx - random.choice([0, 1]))  # Descend or stay
                     else:
-                        melody.append(notes[0])
+                        current_idx = min(len(notes) - 1, current_idx + 1)  # Small rise
+                
+                melody.append(notes[current_idx])
         
         else:  # balanced
             for _ in range(num_notes):

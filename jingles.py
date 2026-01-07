@@ -63,50 +63,53 @@ def generate_menu_music():
 
 
 def generate_game_over_jingle():
-    """Generate short game over jingle using music theory"""
+    """Generate dramatic game over jingle - descending chromatic crash"""
     music_gen = MusicGenerator(sample_rate=22050)
     
-    # Descending melody (sad ending) using music theory notes
+    # Dramatic descending chromatic run (classic "game over" sound)
     melody_notes = [
+        NOTES['E5'],   # High tension
+        NOTES['E5'],   # Repeat for emphasis
+        NOTES['Eb5'],  # Chromatic descent
+        NOTES['D5'],
+        NOTES['Db5'],
         NOTES['C5'],
         NOTES['B4'],
-        NOTES['A4'],
-        NOTES['G4'],
-        NOTES['F4'],
-        NOTES['E4'],
-        NOTES['D4'],
-        NOTES['C4'],
+        NOTES['Bb4'],
+        NOTES['A4'],   # Final resolution
     ]
     
-    # Bass follows melody
+    # Heavy bass hits - dramatic punches
     bass_notes = [
-        NOTES['C4'],
-        NOTES['B3'],
-        NOTES['A3'],
-        NOTES['G3'],
-        NOTES['F3'],
-        NOTES['E3'],
-        NOTES['D3'],
-        NOTES['C3'],
+        NOTES['E2'],   # Low and ominous
+        NOTES['E2'],
+        NOTES['Eb2'],
+        NOTES['D2'],
+        NOTES['Db2'],
+        NOTES['C2'],
+        NOTES['B2'],
+        NOTES['Bb2'],
+        NOTES['A2'],   # Final thud
     ]
     
-    # Minimal drums
+    # Dramatic drum hits
     drum_pattern = {
-        'kick': [0, 4],
-        'snare': [2, 6],
-        'hihat': []
+        'kick': [0, 0.5, 1, 1.5, 2, 2.5, 3],  # Heavy repeated hits
+        'snare': [0.25, 1.25, 2.25, 3.25],    # Rolls
+        'hihat': []  # No hi-hat for dramatic effect
     }
     
-    duration = 3.0
-    bpm = 80  # Slow and dramatic
+    duration = 2.5  # Shorter, more punchy
+    bpm = 100  # Moderate tempo for drama
     
-    # Generate the jingle
+    # Generate the jingle with dramatic straight timing
     jingle_track = music_gen.generate_track(
         melody_notes,
         bass_notes,
         duration=duration,
         bpm=bpm,
-        drum_pattern=drum_pattern
+        drum_pattern=drum_pattern,
+        groove='straight'  # Dramatic straight timing
     )
     
     # Add fade out at the end

@@ -42,21 +42,30 @@ NEW_LEVEL = LevelSpec(
         sky_type='sunny',
         objects=[
             {'type': 'sun', 'position': 'center'},
-            {'type': 'bird', 'count': 2, 'speed': 0.2}
+        ],
+        background_pattern={'type': 'gradient', 'color_pair': 2},
+        horizon_decorations=[
+            {'type': 'mesa', 'positions': [25, 70], 'art': ['___', '| |', '| |']},
         ]
     ),
     scenery_types=[
         SceneryType('cactus', ["  Y  ", " /|\\ ", "  |  "], 3, spawn_weight=2.0),
         SceneryType('tumbleweed', [" oo ", "(oo)", " oo "], 6, spawn_weight=1.0),
     ],
-    music_notes={
-        'melody': [440, 550, 660, 550, 440, 330, 440, 550],
-        'bass': [220, 275, 220, 275, 220, 165, 220, 275]
-    }
+    music_config=MusicConfig(
+        scale_name='G Major',
+        root_note='G4',
+        scale_type='major',           # 'major', 'minor', 'diminished'
+        progression_style='retro',    # 'pop', 'jazz', 'blues', 'retro'
+        melody_style='balanced',      # 'upbeat', 'melancholy', 'balanced'
+        drum_pattern='fast',          # 'standard', 'fast', 'syncopated', 'minimal'
+        groove='triplet',             # 'straight', 'swing', 'shuffle', 'triplet'
+        bpm=135
+    )
 )
 
 # Add to LEVELS list
-LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, NEW_LEVEL]
+LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, NEW_LEVEL]
 ```
 
 ### `rendering.py` - Rendering Component System
