@@ -150,16 +150,18 @@ class SkyRenderer:
         """Render horizon decorations with parallax effect"""
         horizon_row = sky_height - 1
         
-        # Parallax: horizon moves slower than road (0.3x speed)
-        parallax_offset = int(curve_offset * 0.3)
+        # Parallax: horizon moves with curves (0.6x speed for more visible effect)
+        parallax_offset = int(curve_offset * 0.6)
         
         for decoration in level_spec.sky_config.horizon_decorations:
             positions = decoration.get('positions', [])
             art = decoration.get('art', [])
             
             for pos in positions:
-                # Apply parallax offset
-                adjusted_pos = pos + parallax_offset
+                # Center positions around screen width and apply parallax
+                # Map positions from 0-120 range to span full screen width
+                screen_pos = int((pos / 120.0) * self.width)
+                adjusted_pos = screen_pos + parallax_offset
                 
                 # Draw decoration from bottom to top
                 for i, line in enumerate(reversed(art)):
@@ -238,17 +240,23 @@ class SceneryRenderer:
         row_base = int(obj['y'])
         scenery_type = obj['scenery_type']
         
-        if 0 <= row_base < self.height - 5:
-            progress = row_base / (self.height - 2)
+        # Start rendering from where road begins (after sky)
+        sky_height = min(15, self.height // 3)
+        
+        if sky_height <= row_base < self.height - 5:
+            # Adjust progress calculation to match road rendering
+            progress = (row_base - sky_height) / (self.height - 2 - sky_height)
             curve_offset = curve_offset_func(row_base)
             
+            # Match road width calculation
             road_width = int(20 + (60 - 20) * progress)
             center = self.width // 2 + curve_offset
             
+            # Position objects further from road edges for better visibility
             if obj['side'] == 'left':
-                scenery_x = center - road_width // 2 - 8
+                scenery_x = center - road_width // 2 - 10
             else:
-                scenery_x = center + road_width // 2 + 3
+                scenery_x = center + road_width // 2 + 5
             
             scale = 0.3 + progress * 0.7
             
@@ -365,8 +373,13 @@ class RoadRenderer:
         """Render the road with curves and markings"""
         segment_height = 3
         
-        for row in range(self.height - 2):
-            progress = row / (self.height - 2)
+        # Start road from horizon (where sky ends)
+        sky_height = min(15, self.height // 3)
+        start_row = sky_height - 1
+        
+        for row in range(start_row, self.height - 2):
+            # Adjust progress to account for starting position
+            progress = (row - start_row) / (self.height - 2 - start_row)
             road_width = int(self.road_width_top + 
                            (self.road_width_bottom - self.road_width_top) * progress)
             

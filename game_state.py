@@ -118,15 +118,19 @@ class TrafficManager:
         import random
         
         if random.random() < 0.02 + speed * 0.01:
+            # Spawn at horizon line (where road starts)
+            sky_height = min(15, self.height // 3)
+            spawn_y = sky_height - 1
+            
             road_width_top = 20
-            curve_offset = curve_offset_func(0)
+            curve_offset = curve_offset_func(spawn_y)
             center = self.width // 2 + curve_offset
             x_offset = random.randint(-road_width_top // 3, road_width_top // 3)
             x = center + x_offset
             
             traffic_list.append(TrafficCar(
                 x=x,
-                y=-3,
+                y=spawn_y,
                 speed=speed * random.uniform(0.3, 0.7)
             ))
     
