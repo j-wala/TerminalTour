@@ -188,6 +188,49 @@ def generate_game_over_music():
     return sound, duration
 
 
+def generate_pause_music():
+    """Generate calm, ambient pause music"""
+    music_gen = MusicGenerator(sample_rate=22050)
+    
+    # Gentle, calming melody
+    melody_notes = [
+        NOTES['C4'], NOTES['E4'], NOTES['G4'], NOTES['E4'],
+        NOTES['F4'], NOTES['A4'], NOTES['C5'], NOTES['A4'],
+        NOTES['G4'], NOTES['B4'], NOTES['D5'], NOTES['B4'],
+        NOTES['C5'], NOTES['E5'], NOTES['C5'], NOTES['G4']
+    ]
+    
+    # Slow, steady bass
+    bass_notes = [
+        NOTES['C3'], NOTES['C3'], NOTES['C3'], NOTES['C3'],
+        NOTES['F3'], NOTES['F3'], NOTES['F3'], NOTES['F3'],
+        NOTES['G3'], NOTES['G3'], NOTES['G3'], NOTES['G3'],
+        NOTES['C3'], NOTES['C3'], NOTES['C3'], NOTES['C3']
+    ]
+    
+    # Minimal, soft drums
+    drum_pattern = {
+        'kick': [0, 4, 8, 12],
+        'snare': [],
+        'hihat': [2, 6, 10, 14]
+    }
+    
+    duration = 8.0  # Longer loop
+    bpm = 80  # Slow and relaxed
+    
+    # Generate the pause music
+    sound = music_gen.create_pygame_sound(
+        melody_notes,
+        bass_notes,
+        duration=duration,
+        bpm=bpm,
+        drum_pattern=drum_pattern,
+        groove='straight'  # Calm straight timing
+    )
+    
+    return sound, duration
+
+
 def play_jingle_once(sound, duration):
     """Play a jingle sound once"""
     import time

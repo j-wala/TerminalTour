@@ -7,12 +7,14 @@ from level_specs import LEVELS, get_level_for_distance, PLAYER_CAR, TRAFFIC_CAR
 from rendering import SkyRenderer, SceneryRenderer, CarRenderer, RoadRenderer, BackgroundRenderer
 from game_state import GameState, TrafficManager, InputHandler
 from ui import HUDRenderer, TitleScreen, GameOverScreen
-from music_generator import MusicGenerator
-from music_theory import generate_music_from_config
 from transitions import TransitionEffect
 from menu_system import MainMenu, GameOverMenu
-from jingles import generate_menu_music, generate_game_over_jingle, generate_game_over_music, play_jingle_once
+from pause_menu import PauseMenu
+from countdown import CountdownTimer
 from sound_mixer import SoundMixer
+from jingles import generate_menu_music, generate_game_over_jingle, generate_game_over_music, play_jingle_once
+from music_theory import generate_music_from_config
+from music_generator import MusicGenerator
 
 
 class OutRunGame:
@@ -29,6 +31,12 @@ class OutRunGame:
         
         # Initialize color pairs
         self._init_colors()
+        
+        # Initialize pygame mixer FIRST (before any music generation)
+        try:
+            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+        except:
+            pass
         
         # Initialize game components
         self.game_state = GameState(self.width, self.height)
@@ -48,6 +56,8 @@ class OutRunGame:
         self.sound_mixer = SoundMixer(stdscr, self.width, self.height)
         self.main_menu = MainMenu(stdscr, self.width, self.height, self.sound_mixer, game=self)
         self.game_over_menu = GameOverMenu(stdscr, self.width, self.height)
+        self.pause_menu = PauseMenu(stdscr, self.width, self.height)
+        self.countdown_timer = CountdownTimer(stdscr, self.width, self.height)
         
         # Level tracking
         self.current_level = LEVELS[0]
@@ -67,12 +77,7 @@ class OutRunGame:
         self.menu_music_playing = False
         self.game_over_music_playing = False
         
-        # Initialize pygame first
-        try:
-            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-        except:
-            pass
-        
+        # Initialize music (pygame.mixer already initialized above)
         self.init_menu_music()
         self.init_game_over_jingle()
         self.init_game_over_music()
@@ -228,9 +233,9 @@ class OutRunGame:
         try:
             music_gen = MusicGenerator(sample_rate=22050)
             
-            # Generate music from level's music configuration with 4 bars
+            # Generate music from level's music configuration with 8 bars for longer loops
             if self.current_level.music_config:
-                level_music = generate_music_from_config(self.current_level.music_config, num_bars=4)
+                level_music = generate_music_from_config(self.current_level.music_config, num_bars=8)
                 
                 melody_notes = level_music['melody']
                 bass_notes = level_music['bass']
@@ -552,10 +557,14 @@ class OutRunGame:
                     self.current_level = LEVELS[0]  # Fallback
                 self.game_state.distance = 0
                 
-                # Initialize or regenerate game music
-                self.stdscr.nodelay(1)  # Non-blocking mode for gameplay
+                # Initialize music
                 self.init_music()
-                self.main_menu.music_changed = False  # Reset flag
+                
+                # Set to non-blocking mode before countdown
+                self.stdscr.nodelay(1)
+                
+                # Show countdown with game rendered in background
+                self.countdown_timer.show(render_callback=self.render_game)
                 
                 # Run game
                 if not self._run_game_loop():
@@ -568,6 +577,33 @@ class OutRunGame:
         while True:
             if not self.game_state.game_over:
                 frame_start = time.time()
+                
+                # Check for pause (ESC key)
+                self.stdscr.nodelay(1)
+                key = self.stdscr.getch()
+                if key == 27:  # ESC
+                    pause_action = self._handle_pause()
+                    if pause_action == 'quit':
+                        return False
+                    elif pause_action == 'menu':
+                        return True
+                    elif pause_action == 'restart':
+                        # Reset and restart
+                        self.game_state.reset()
+                        self.sky_renderer.clear_objects()
+                        self.scenery_renderer.clear_objects()
+                        active_indices = self.settings.get_active_levels() if self.settings else [0, 1, 2, 3, 4, 5]
+                        if active_indices:
+                            self.current_level = LEVELS[active_indices[0]]
+                        else:
+                            self.current_level = LEVELS[0]
+                        self.game_state.distance = 0
+                        self.init_music()
+                        
+                        # Show countdown with game rendered
+                        self.countdown_timer.show(render_callback=self.render_game)
+                        continue
+                    # else resume - continue loop
                 
                 # Update
                 self.update_game()
@@ -615,14 +651,14 @@ class OutRunGame:
                         self.current_level = LEVELS[0]  # Fallback
                     self.game_state.distance = 0
                     
-                    # Switch back to non-blocking mode
-                    self.stdscr.nodelay(1)
-                    
                     # Regenerate music
                     self.init_music()
                     
-                    # Small delay to ensure clean state
-                    time.sleep(0.1)
+                    # Switch to non-blocking mode before countdown
+                    self.stdscr.nodelay(1)
+                    
+                    # Show countdown with game rendered
+                    self.countdown_timer.show(render_callback=self.render_game)
                     
                     # Continue game loop
                     continue
@@ -630,6 +666,21 @@ class OutRunGame:
                     return True  # Return to main menu
                 elif action == 'quit':
                     return False  # Exit game
+    
+    def _handle_pause(self):
+        """Handle pause menu"""
+        # Stop game music
+        self.stop_game_music()
+        
+        # Show pause menu
+        action = self.pause_menu.show()
+        
+        # Resume game music if resuming
+        if action == 'resume':
+            # Restart music loop
+            self.init_music()
+        
+        return action
 
 
 def main(stdscr):
