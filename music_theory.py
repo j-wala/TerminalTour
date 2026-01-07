@@ -106,6 +106,39 @@ SCALES = {
 }
 
 
+class DrumPattern:
+    """Drum pattern generator for different styles"""
+    
+    PATTERNS = {
+        'standard': {
+            'kick': [0, 2, 4, 6],           # On beats 1 and 3
+            'snare': [1, 3, 5, 7],          # On beats 2 and 4
+            'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],  # 8th notes
+        },
+        'fast': {
+            'kick': [0, 1, 2, 3, 4, 5, 6, 7],  # Every beat
+            'snare': [1, 3, 5, 7],             # Backbeats
+            'hihat': [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2, 2.25, 2.5, 2.75, 3, 3.25, 3.5, 3.75,
+                     4, 4.25, 4.5, 4.75, 5, 5.25, 5.5, 5.75, 6, 6.25, 6.5, 6.75, 7, 7.25, 7.5, 7.75],  # 16th notes
+        },
+        'syncopated': {
+            'kick': [0, 1.5, 2, 4, 5.5, 6],    # Syncopated kicks
+            'snare': [1, 3, 5, 7],             # Backbeats
+            'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5],
+        },
+        'minimal': {
+            'kick': [0, 4],                    # Just on 1 and 5
+            'snare': [2, 6],                   # Just on 3 and 7
+            'hihat': [0, 1, 2, 3, 4, 5, 6, 7], # Quarter notes
+        },
+    }
+    
+    @staticmethod
+    def get_pattern(pattern_name='standard'):
+        """Get drum pattern by name"""
+        return DrumPattern.PATTERNS.get(pattern_name, DrumPattern.PATTERNS['standard'])
+
+
 class ChordProgression:
     """Generates chord progressions using circle of fifths"""
     
@@ -201,38 +234,39 @@ class ChordProgression:
         return bass_line[:num_notes]
 
 
-def generate_level_music(level_name, bpm=120):
-    """Generate music appropriate for a level"""
+def generate_music_from_config(music_config):
+    """Generate music from a level's music configuration"""
     
-    if level_name == "BEACH":
-        scale = SCALES['C_Major']
-        melody = ChordProgression.generate_melody(scale, 8, 'upbeat')
-        bass = ChordProgression.generate_bass(scale, 'pop', 8)
-        
-    elif level_name == "CITY":
-        scale = SCALES['A_Minor']
-        melody = ChordProgression.generate_melody(scale, 8, 'balanced')
-        bass = ChordProgression.generate_bass(scale, 'jazz', 8)
-        
-    elif level_name == "FACTORY":
-        scale = SCALES['E_Minor']
-        melody = ChordProgression.generate_melody(scale, 8, 'melancholy')
-        bass = ChordProgression.generate_bass(scale, 'blues', 8)
-        
-    elif level_name == "DESERT":
-        scale = SCALES['G_Major']
-        melody = ChordProgression.generate_melody(scale, 8, 'balanced')
-        bass = ChordProgression.generate_bass(scale, 'retro', 8)
-    
+    # Determine scale intervals based on type
+    if music_config.scale_type == 'major':
+        intervals = [0, 2, 4, 5, 7, 9, 11]
+    elif music_config.scale_type == 'minor':
+        intervals = [0, 2, 3, 5, 7, 8, 10]
+    elif music_config.scale_type == 'diminished':
+        intervals = [0, 2, 3, 5, 6, 8, 9, 11]
     else:
-        # Default
-        scale = SCALES['C_Major']
-        melody = ChordProgression.generate_melody(scale, 8, 'upbeat')
-        bass = ChordProgression.generate_bass(scale, 'pop', 8)
+        intervals = [0, 2, 4, 5, 7, 9, 11]  # Default to major
+    
+    # Create scale from config
+    bass_root = music_config.root_note.replace('4', '3').replace('5', '4')
+    scale = Scale(
+        music_config.scale_name,
+        music_config.root_note,
+        intervals,
+        bass_root
+    )
+    
+    # Generate melody and bass
+    melody = ChordProgression.generate_melody(scale, 8, music_config.melody_style)
+    bass = ChordProgression.generate_bass(scale, music_config.progression_style, 8)
+    
+    # Get drum pattern
+    drum_pattern = DrumPattern.get_pattern(music_config.drum_pattern)
     
     return {
         'melody': melody,
         'bass': bass,
         'scale': scale,
-        'bpm': bpm
+        'bpm': music_config.bpm,
+        'drum_pattern': drum_pattern
     }

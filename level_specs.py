@@ -5,14 +5,25 @@ Defines all level configurations, assets, and rendering data
 
 import curses
 
+class MusicConfig:
+    """Configuration for level music"""
+    def __init__(self, scale_name, root_note, scale_type, progression_style, melody_style, drum_pattern, bpm=120):
+        self.scale_name = scale_name
+        self.root_note = root_note
+        self.scale_type = scale_type  # 'major', 'minor', 'diminished'
+        self.progression_style = progression_style  # 'pop', 'jazz', 'blues', etc.
+        self.melody_style = melody_style  # 'upbeat', 'melancholy', 'balanced'
+        self.drum_pattern = drum_pattern  # 'standard', 'fast', 'syncopated', 'minimal'
+        self.bpm = bpm
+
 class LevelSpec:
     """Base class for level specifications"""
-    def __init__(self, name, distance_threshold, sky_config, scenery_types, music_notes=None):
+    def __init__(self, name, distance_threshold, sky_config, scenery_types, music_config=None):
         self.name = name
         self.distance_threshold = distance_threshold
         self.sky_config = sky_config
         self.scenery_types = scenery_types
-        self.music_notes = music_notes or []
+        self.music_config = music_config
 
 class SkyConfig:
     """Configuration for sky rendering"""
@@ -80,10 +91,15 @@ BEACH_LEVEL = LevelSpec(
         SceneryType('umbrella', [" _|_ ", "(___)", "  |  "], 2, spawn_weight=1.0),
         SceneryType('rock', [" ___ ", "/   \\", "\\___/"], 6, spawn_weight=0.8),
     ],
-    music_notes={
-        'melody': [523, 659, 784, 659, 523, 392, 523, 659],
-        'bass': [262, 330, 262, 330, 262, 196, 262, 330]
-    }
+    music_config=MusicConfig(
+        scale_name='C Major',
+        root_note='C4',
+        scale_type='major',
+        progression_style='pop',
+        melody_style='upbeat',
+        drum_pattern='standard',
+        bpm=120
+    )
 )
 
 CITY_LEVEL = LevelSpec(
@@ -105,10 +121,15 @@ CITY_LEVEL = LevelSpec(
         SceneryType('lamp', [" O ", " | ", " | "], 2, spawn_weight=1.0),
         SceneryType('sign', ["###", "[>]", " | "], 3, spawn_weight=0.8),
     ],
-    music_notes={
-        'melody': [659, 784, 880, 784, 659, 523, 659, 784],
-        'bass': [330, 392, 330, 392, 330, 262, 330, 392]
-    }
+    music_config=MusicConfig(
+        scale_name='A Minor',
+        root_note='A4',
+        scale_type='minor',
+        progression_style='jazz',
+        melody_style='balanced',
+        drum_pattern='syncopated',
+        bpm=128
+    )
 )
 
 FACTORY_LEVEL = LevelSpec(
@@ -130,10 +151,15 @@ FACTORY_LEVEL = LevelSpec(
         SceneryType('tank', [" __ ", "[__]", "[__]"], 6, spawn_weight=1.0),
         SceneryType('pipe', ["]===", "]===", "]==="], 1, spawn_weight=1.2),
     ],
-    music_notes={
-        'melody': [392, 523, 659, 523, 392, 330, 392, 523],
-        'bass': [196, 262, 196, 262, 196, 165, 196, 262]
-    }
+    music_config=MusicConfig(
+        scale_name='E Minor',
+        root_note='E4',
+        scale_type='minor',
+        progression_style='blues',
+        melody_style='melancholy',
+        drum_pattern='minimal',
+        bpm=110
+    )
 )
 
 
@@ -157,10 +183,15 @@ DESERT_LEVEL = LevelSpec(
         SceneryType('tumbleweed', [" oo ", "(oo)", " oo "], 6, spawn_weight=1.0),
         SceneryType('rock', [" ___ ", "/   \\", "\\___/"], 6, spawn_weight=1.2),
     ],
-    music_notes={
-        'melody': [440, 550, 660, 550, 440, 330, 440, 550],
-        'bass': [220, 275, 220, 275, 220, 165, 220, 275]
-    }
+    music_config=MusicConfig(
+        scale_name='G Major',
+        root_note='G4',
+        scale_type='major',
+        progression_style='retro',
+        melody_style='balanced',
+        drum_pattern='fast',
+        bpm=135
+    )
 )
 
 LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL]

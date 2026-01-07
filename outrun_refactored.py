@@ -8,7 +8,7 @@ from rendering import SkyRenderer, SceneryRenderer, CarRenderer, RoadRenderer, B
 from game_state import GameState, TrafficManager, InputHandler
 from ui import HUDRenderer, TitleScreen, GameOverScreen
 from music_generator import MusicGenerator
-from music_theory import generate_level_music
+from music_theory import generate_music_from_config
 from transitions import TransitionEffect
 
 
@@ -70,25 +70,34 @@ class OutRunGame:
             pass
     
     def generate_music(self):
-        """Generate procedural chiptune music using music theory"""
+        """Generate procedural chiptune music using music theory from level config"""
         try:
             music_gen = MusicGenerator(sample_rate=22050)
             
             duration = 4.0
             
-            # Generate music based on music theory for current level
-            level_music = generate_level_music(self.current_level.name, bpm=120)
-            
-            melody_notes = level_music['melody']
-            bass_notes = level_music['bass']
-            bpm = level_music['bpm']
+            # Generate music from level's music configuration
+            if self.current_level.music_config:
+                level_music = generate_music_from_config(self.current_level.music_config)
+                
+                melody_notes = level_music['melody']
+                bass_notes = level_music['bass']
+                bpm = level_music['bpm']
+                drum_pattern = level_music['drum_pattern']
+            else:
+                # Fallback if no music config
+                melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
+                bass_notes = [262, 330, 262, 330, 262, 196, 262, 330]
+                bpm = 120
+                drum_pattern = None
             
             # Generate rich music with melody, bass, harmony, and drums
             self.sound = music_gen.create_pygame_sound(
                 melody_notes, 
                 bass_notes, 
                 duration=duration, 
-                bpm=bpm
+                bpm=bpm,
+                drum_pattern=drum_pattern
             )
             
             def play_loop():

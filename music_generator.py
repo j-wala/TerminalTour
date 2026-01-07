@@ -111,36 +111,44 @@ class MusicGenerator:
         hihat = (noise * envelope * 0.5).astype(np.int16)
         return hihat
     
-    def generate_drum_pattern(self, duration, bpm=120):
-        """Generate a drum pattern"""
+    def generate_drum_pattern(self, duration, bpm=120, pattern=None):
+        """Generate a drum pattern based on pattern definition"""
+        if pattern is None:
+            # Default pattern
+            pattern = {
+                'kick': [0, 2, 4, 6],
+                'snare': [1, 3, 5, 7],
+                'hihat': [0, 0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5, 5.5, 6, 6.5, 7, 7.5]
+            }
+        
         beat_duration = 60.0 / bpm
-        num_beats = int(duration / beat_duration)
         
         # Create silent array
         drum_track = np.zeros(int(self.sample_rate * duration), dtype=np.int16)
         
-        for beat in range(num_beats):
-            beat_pos = int(beat * beat_duration * self.sample_rate)
-            
-            # Kick on beats 1 and 3 (0 and 2)
-            if beat % 4 == 0 or beat % 4 == 2:
+        # Add kicks
+        for beat_time in pattern.get('kick', []):
+            beat_pos = int(beat_time * beat_duration * self.sample_rate)
+            if beat_pos < len(drum_track):
                 kick = self.generate_kick_drum()
                 end_pos = min(beat_pos + len(kick), len(drum_track))
                 drum_track[beat_pos:end_pos] += kick[:end_pos - beat_pos]
-            
-            # Snare on beats 2 and 4 (1 and 3)
-            if beat % 4 == 1 or beat % 4 == 3:
+        
+        # Add snares
+        for beat_time in pattern.get('snare', []):
+            beat_pos = int(beat_time * beat_duration * self.sample_rate)
+            if beat_pos < len(drum_track):
                 snare = self.generate_snare_drum()
                 end_pos = min(beat_pos + len(snare), len(drum_track))
                 drum_track[beat_pos:end_pos] += snare[:end_pos - beat_pos]
-            
-            # Hi-hat on every beat and off-beat
-            for sub_beat in [0, 0.5]:
-                hihat_pos = int((beat + sub_beat) * beat_duration * self.sample_rate)
-                if hihat_pos < len(drum_track):
-                    hihat = self.generate_hihat()
-                    end_pos = min(hihat_pos + len(hihat), len(drum_track))
-                    drum_track[hihat_pos:end_pos] += hihat[:end_pos - hihat_pos]
+        
+        # Add hi-hats
+        for beat_time in pattern.get('hihat', []):
+            beat_pos = int(beat_time * beat_duration * self.sample_rate)
+            if beat_pos < len(drum_track):
+                hihat = self.generate_hihat()
+                end_pos = min(beat_pos + len(hihat), len(drum_track))
+                drum_track[beat_pos:end_pos] += hihat[:end_pos - hihat_pos]
         
         return drum_track
     
@@ -182,13 +190,13 @@ class MusicGenerator:
         
         return harmony * 0.4  # Lower volume for harmony
     
-    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120):
+    def generate_track(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None):
         """Generate complete music track with all instruments"""
         # Generate individual tracks
         melody = self.generate_melody_track(melody_notes, duration)
         bass = self.generate_bass_track(bass_notes, duration)
         harmony = self.generate_harmony_track(melody_notes, duration)
-        drums = self.generate_drum_pattern(duration, bpm)
+        drums = self.generate_drum_pattern(duration, bpm, drum_pattern)
         
         # Ensure all tracks are the same length
         max_len = max(len(melody), len(bass), len(harmony), len(drums))
@@ -216,7 +224,7 @@ class MusicGenerator:
         
         return stereo
     
-    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120):
+    def create_pygame_sound(self, melody_notes, bass_notes, duration=4.0, bpm=120, drum_pattern=None):
         """Create a pygame Sound object from the generated music"""
-        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm)
+        stereo_audio = self.generate_track(melody_notes, bass_notes, duration, bpm, drum_pattern)
         return pygame.sndarray.make_sound(stereo_audio)
