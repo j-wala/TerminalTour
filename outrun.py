@@ -50,7 +50,7 @@ class OutRunGame:
         self.curve_change_timer = 0
         self.tree_positions = []
         self.tree_offset = 0
-        self.music_enabled = True
+        self.music_enabled = False
         self.sound = None
         self.current_level = 0
         self.level_names = ["BEACH", "CITY", "FACTORY"]

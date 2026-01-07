@@ -15,7 +15,7 @@ A retro OutRun-style racing game built entirely with ASCII art in the terminal!
 - **Level-Specific Scenery**: Unique roadside objects for each zone
 - **Collision Detection**: Game over when hitting traffic or road edges
 - **Scoring System**: Earn points for each car you pass
-- **Chiptune Music**: Procedurally generated retro 8-bit background music with toggle
+- **Rich Chiptune Music**: Procedurally generated music with melody, bass, harmony, and drums (kick, snare, hi-hat)
 - **Retro Aesthetics**: Colorful terminal graphics with classic arcade feel
 - **Speed Control**: Accelerate and decelerate to navigate traffic
 
@@ -52,10 +52,19 @@ A retro OutRun-style racing game built entirely with ASCII art in the terminal!
 pip install -r requirements.txt
 ```
 
-Then simply run:
+## Running the Game
+
+**Refactored Version (Recommended)**:
+```bash
+python outrun_refactored.py
+```
+
+**Original Version**:
 ```bash
 python outrun.py
 ```
+
+Both versions are functionally identical, but the refactored version uses a modular architecture that makes it easy to add new levels, scenery, and features. See `ARCHITECTURE.md` for details.
 
 To play without music (if pygame/numpy aren't available), the game will still work - music is optional.
 
