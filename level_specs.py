@@ -409,7 +409,84 @@ SPACE_LEVEL = LevelSpec(
     )
 )
 
-LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, HAUNTED_LEVEL, NEON_LEVEL, SNOW_LEVEL, JUNGLE_LEVEL, SPACE_LEVEL]
+VOLCANO_LEVEL = LevelSpec(
+    name="VOLCANO",
+    distance_threshold=4500,
+    sky_config=SkyConfig(
+        color_pair=1,  # Red/orange
+        sky_type='overcast',
+        objects=[
+            {'type': 'ash', 'count': 15, 'speed': 0.15},
+            {'type': 'embers', 'count': 8, 'speed': 0.3}
+        ],
+        background_pattern={'type': 'smoke', 'color_pair': 1},
+        horizon_decorations=[
+            {'type': 'volcano', 'positions': [40, 80], 'art': ['  ^  ', ' /X\\ ', '/XXX\\', '-----']},
+            {'type': 'lava_flow', 'positions': [25, 60, 95], 'art': ['~~~', '~~~']},
+        ]
+    ),
+    roadside_scenery=[
+        SceneryType('lava_rock', [" ___ ", "/XXX\\", "\\XXX/"], 1, spawn_weight=2.0),
+        SceneryType('smoke_vent', ["  ~  ", " ~~~ ", "~~~~~"], 4, spawn_weight=1.5),
+        SceneryType('charred_tree', ["  |  ", " /|\\ ", "  |  ", "  |  "], 1, spawn_weight=1.2),
+    ],
+    distant_scenery=[
+        SceneryType('lava_pool', [" oOo ", "(~~~)", " ~~~ "], 1, spawn_weight=0.8),
+        SceneryType('steam', ["  ~  ", " ~~~ "], 7, spawn_weight=0.7),
+        SceneryType('ash_pile', [" ___ ", "/___\\"], 7, spawn_weight=0.5),
+    ],
+    music_config=MusicConfig(
+        scale_name='D Minor',
+        root_note='D4',
+        scale_type='minor',
+        progression_style='dark',
+        melody_style='dramatic',
+        drum_pattern='heavy',
+        groove='straight',
+        bpm=135
+    )
+)
+
+OCEAN_LEVEL = LevelSpec(
+    name="OCEAN",
+    distance_threshold=5000,
+    sky_config=SkyConfig(
+        color_pair=4,  # Cyan/blue
+        sky_type='clear',
+        objects=[
+            {'type': 'waves', 'count': 10, 'speed': 0.1},
+            {'type': 'bubbles', 'count': 12, 'speed': 0.25},
+            {'type': 'fish', 'count': 6, 'speed': 0.2}
+        ],
+        background_pattern={'type': 'water', 'color_pair': 4},
+        horizon_decorations=[
+            {'type': 'coral', 'positions': [30, 70, 100], 'art': [' Y ', 'YYY', ' Y ']},
+            {'type': 'shipwreck', 'positions': [50], 'art': ['|~|', '|#|', '###']},
+        ]
+    ),
+    roadside_scenery=[
+        SceneryType('coral_reef', ["  Y  ", " YYY ", "YYYYY"], 4, spawn_weight=2.0),
+        SceneryType('seaweed', ["  ~  ", "  ~  ", " ~~~ "], 3, spawn_weight=1.8),
+        SceneryType('treasure_chest', [" ___ ", "[===]", "[###]"], 2, spawn_weight=1.0),
+    ],
+    distant_scenery=[
+        SceneryType('jellyfish', ["  o  ", " (o) ", "  ~  "], 4, spawn_weight=0.9),
+        SceneryType('starfish', [" \\|/ ", "--*--", " /|\\ "], 6, spawn_weight=0.7),
+        SceneryType('anemone', [" ))) ", " ||| "], 5, spawn_weight=0.6),
+    ],
+    music_config=MusicConfig(
+        scale_name='A Major',
+        root_note='A4',
+        scale_type='major',
+        progression_style='ambient',
+        melody_style='flowing',
+        drum_pattern='light',
+        groove='triplet',
+        bpm=110
+    )
+)
+
+LEVELS = [BEACH_LEVEL, CITY_LEVEL, FACTORY_LEVEL, DESERT_LEVEL, HAUNTED_LEVEL, NEON_LEVEL, SNOW_LEVEL, JUNGLE_LEVEL, SPACE_LEVEL, VOLCANO_LEVEL, OCEAN_LEVEL]
 
 
 def get_level_for_distance(distance, settings=None):

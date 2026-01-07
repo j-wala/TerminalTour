@@ -19,10 +19,10 @@ class GameSettings:
         
         # Level configuration
         self.level_length = 500  # Distance in meters per level
-        self.enabled_levels = [True, True, True, True, True, True]  # Beach, City, Factory, Desert, Haunted, Neon
-        self.level_order = [0, 1, 2, 3, 4, 5]  # Order of levels (first is starting level)
+        self.enabled_levels = [True, True, True, True, True, True, True, True, True, True, True]  # All 11 levels
+        self.level_order = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]  # Order of levels (first is starting level)
         self.endless_mode = False  # Loop levels infinitely
-        self.randomize_levels = False  # Randomize level order on game start
+        self.randomize_levels = True  # Randomize level order on game start
         
         # Try to load saved settings
         self.load()
@@ -58,10 +58,22 @@ class GameSettings:
                 self.music_enabled = settings_data.get('music_enabled', True)
                 self.difficulty = settings_data.get('difficulty', 'normal')
                 self.level_length = settings_data.get('level_length', 500)
-                self.enabled_levels = settings_data.get('enabled_levels', [True, True, True, True, True, True])
-                self.level_order = settings_data.get('level_order', [0, 1, 2, 3, 4, 5])
+                self.enabled_levels = settings_data.get('enabled_levels', [True, True, True, True, True, True, True, True, True, True, True])
+                self.level_order = settings_data.get('level_order', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
                 self.endless_mode = settings_data.get('endless_mode', False)
                 self.randomize_levels = settings_data.get('randomize_levels', False)
+                
+                # Ensure settings are compatible with current level count
+                from level_specs import LEVELS
+                num_levels = len(LEVELS)
+                
+                # Extend enabled_levels if new levels were added
+                while len(self.enabled_levels) < num_levels:
+                    self.enabled_levels.append(True)
+                
+                # Extend level_order if new levels were added
+                while len(self.level_order) < num_levels:
+                    self.level_order.append(len(self.level_order))
                 return True
         except Exception as e:
             import sys
