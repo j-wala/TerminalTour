@@ -156,12 +156,15 @@ class InputHandler:
     
     @staticmethod
     def handle_input(stdscr, game_state, sound=None):
-        """Process keyboard input - returns False to quit, True to continue"""
+        """Process keyboard input - returns: True=continue, False=quit, 'pause'=pause requested"""
         try:
             key = stdscr.getch()
             
             if key == ord('q'):
                 return False
+            
+            if key == 27:  # ESC key
+                return 'pause'
             
             if key == curses.KEY_LEFT or key == ord('a'):
                 game_state.player.x -= 2

@@ -578,10 +578,17 @@ class OutRunGame:
             if not self.game_state.game_over:
                 frame_start = time.time()
                 
-                # Check for pause (ESC key)
-                self.stdscr.nodelay(1)
-                key = self.stdscr.getch()
-                if key == 27:  # ESC
+                # Update
+                self.update_game()
+                
+                # Render
+                self.render_game()
+                
+                # Handle input (including ESC for pause)
+                input_result = InputHandler.handle_input(self.stdscr, self.game_state, self.sound)
+                if input_result == False:
+                    return False
+                elif input_result == 'pause':
                     pause_action = self._handle_pause()
                     if pause_action == 'quit':
                         return False
@@ -604,16 +611,6 @@ class OutRunGame:
                         self.countdown_timer.show(render_callback=self.render_game)
                         continue
                     # else resume - continue loop
-                
-                # Update
-                self.update_game()
-                
-                # Render
-                self.render_game()
-                
-                # Handle input
-                if not InputHandler.handle_input(self.stdscr, self.game_state, self.sound):
-                    return False
                 
                 # Frame timing
                 frame_elapsed = time.time() - frame_start
