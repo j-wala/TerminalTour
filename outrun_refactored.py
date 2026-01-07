@@ -348,8 +348,8 @@ class OutRunGame:
             next_threshold = (current_level_idx + 1) * (self.settings.level_length if self.settings else 500)
             distance_to_threshold = next_threshold - self.game_state.distance
         
-        # Start transition when within window before threshold
-        if -transition_window <= distance_to_threshold <= transition_window and self.game_state.transition_stage == 'none':
+        # Start transition when within window before threshold (only when approaching, not after passing)
+        if 0 <= distance_to_threshold <= transition_window and self.game_state.transition_stage == 'none' and not self.game_state.transition_triggered:
             if current_level_idx < len(active_indices) - 1 or (self.settings and self.settings.endless_mode):
                 # Get next level and store it for the transition
                 next_level_index = active_indices[next_level_idx]
@@ -361,6 +361,7 @@ class OutRunGame:
                 
                 self.game_state.transition_stage = 'horizon_out'
                 self.game_state.transition_progress = 0
+                self.game_state.transition_triggered = True  # Mark transition as triggered
                 self.game_state.old_level_color = self.current_level.sky_config.color_pair
                 self.game_state.new_level_color = new_level.sky_config.color_pair
                 self.previous_level = self.current_level
@@ -428,6 +429,7 @@ class OutRunGame:
             if self.game_state.transition_progress >= 1.0:
                 self.game_state.transition_stage = 'none'
                 self.game_state.transition_progress = 0
+                self.game_state.transition_triggered = False  # Reset flag when transition completes
                 
                 # Ensure volume is at full
                 if self.sound:

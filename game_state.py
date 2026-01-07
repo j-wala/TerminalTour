@@ -50,6 +50,7 @@ class GameState:
         self.level_transition_timer = 0
         self.transition_stage = 'none'  # 'none', 'horizon_out', 'color_fade', 'horizon_in'
         self.transition_progress = 0
+        self.transition_triggered = False  # Flag to prevent re-triggering same transition
         self.old_level_color = None
         self.new_level_color = None
     
