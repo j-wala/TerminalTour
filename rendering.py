@@ -375,7 +375,7 @@ class RoadRenderer:
         
         # Start road from horizon (where sky ends)
         sky_height = min(15, self.height // 3)
-        start_row = sky_height - 1
+        start_row = sky_height
         
         for row in range(start_row, self.height - 2):
             # Adjust progress to account for starting position
