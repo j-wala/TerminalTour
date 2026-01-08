@@ -156,7 +156,7 @@ class InputHandler:
     """Handles user input"""
     
     @staticmethod
-    def handle_input(stdscr, game_state, sound=None):
+    def handle_input(stdscr, game_state, music_manager=None):
         """Process keyboard input - returns: True=continue, False=quit, 'pause'=pause requested"""
         try:
             key = stdscr.getch()
@@ -181,11 +181,9 @@ class InputHandler:
             
             if key == ord('m') or key == ord('M'):
                 game_state.music_enabled = not game_state.music_enabled
-                if not game_state.music_enabled and sound:
-                    try:
-                        sound.stop()
-                    except:
-                        pass
+                # Stop music if disabled, it will restart on next play_level_music call if enabled
+                if not game_state.music_enabled and music_manager:
+                    music_manager.stop_game_music()
         
         except:
             pass

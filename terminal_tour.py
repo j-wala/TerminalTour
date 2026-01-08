@@ -18,9 +18,8 @@ from menu_system import MainMenu, GameOverMenu
 from pause_menu import PauseMenu
 from countdown import CountdownTimer
 from sound_mixer import SoundMixer
-from jingles import generate_menu_music, generate_game_over_jingle, generate_game_over_music, play_jingle_once
-from music_theory import generate_music_from_config
-from music_generator import MusicGenerator
+from audio_manager import MusicManager
+from transition_manager import TransitionManager
 
 
 class TerminalTourGame:
@@ -68,28 +67,14 @@ class TerminalTourGame:
         
         # Level tracking
         self.current_level = LEVELS[0]
-        self.previous_level = None
         
-        # Music
-        self.sound = None
-        self.music_cache = {}  # Cache generated music by level name
-        self.music_thread_active = False  # Flag to track active music thread
-        self.menu_music = None
-        self.menu_music_duration = 0
-        self.game_over_jingle = None
-        self.game_over_jingle_duration = 0
-        self.game_over_music = None
-        self.game_over_music_duration = 0
-        # Initialize default settings for menu music
+        # Initialize default settings
         from menu_system import GameSettings
         self.settings = GameSettings()
-        self.menu_music_playing = False
-        self.game_over_music_playing = False
         
-        # Initialize music (pygame.mixer already initialized above)
-        self.init_menu_music()
-        self.init_game_over_jingle()
-        self.init_game_over_music()
+        # Initialize managers
+        self.music_manager = MusicManager(self.sound_mixer)
+        self.transition_manager = TransitionManager(self.game_state)
     
     def _init_colors(self):
         """Initialize color pairs"""
@@ -101,350 +86,19 @@ class TerminalTourGame:
         curses.init_pair(6, curses.COLOR_WHITE, curses.COLOR_BLACK)
         curses.init_pair(7, curses.COLOR_BLUE, curses.COLOR_BLACK)
     
-    def init_music(self):
-        """Initialize game music"""
-        try:
-            self.generate_music()
-        except:
-            pass
-    
-    def init_menu_music(self):
-        """Initialize menu music"""
-        try:
-            self.menu_music, self.menu_music_duration = generate_menu_music()
-        except Exception as e:
-            import sys
-            print(f"Error initializing menu music: {e}", file=sys.stderr)
-            self.menu_music = None
-            self.menu_music_duration = 0
-    
-    def init_game_over_jingle(self):
-        """Initialize game over jingle"""
-        try:
-            self.game_over_jingle, self.game_over_jingle_duration = generate_game_over_jingle()
-        except:
-            pass
-    
-    def init_game_over_music(self):
-        """Initialize game over music"""
-        try:
-            self.game_over_music, self.game_over_music_duration = generate_game_over_music()
-        except Exception as e:
-            import sys
-            print(f"Error initializing game over music: {e}", file=sys.stderr)
-            self.game_over_music = None
-            self.game_over_music_duration = 0
-    
-    def play_menu_music(self):
-        """Start menu music loop"""
-        # Check if music is enabled (settings always exists now)
-        if self.settings and not self.settings.music_enabled:
-            return
-        
-        if self.menu_music and not self.menu_music_playing:
-            # Stop any other music first
-            self.stop_game_music()
-            self.stop_game_over_music()
-            
-            self.menu_music_playing = True
-            def menu_loop():
-                while self.menu_music_playing:
-                    # Check settings before playing
-                    if self.menu_music_playing and self.settings and self.settings.music_enabled:
-                        self.menu_music.play()
-                    time.sleep(self.menu_music_duration)
-            
-            music_thread = threading.Thread(target=menu_loop, daemon=True)
-            music_thread.start()
-    
-    def stop_menu_music(self):
-        """Stop menu music loop"""
-        self.menu_music_playing = False
-        time.sleep(0.1)  # Give thread time to stop
-        if self.menu_music:
-            try:
-                self.menu_music.stop()
-            except:
-                pass
-    
-    def play_game_over_music(self):
-        """Start game over music loop"""
-        # Check if music is enabled
-        if not (self.settings and self.settings.music_enabled):
-            return
-        
-        if self.game_over_music and not self.game_over_music_playing:
-            # Stop any other music first
-            self.stop_game_music()
-            self.stop_menu_music()
-            
-            self.game_over_music_playing = True
-            def game_over_loop():
-                while self.game_over_music_playing:
-                    # Check settings before playing
-                    if self.game_over_music_playing and self.settings and self.settings.music_enabled:
-                        self.game_over_music.play()
-                    time.sleep(self.game_over_music_duration)
-            
-            music_thread = threading.Thread(target=game_over_loop, daemon=True)
-            music_thread.start()
-    
-    def stop_game_over_music(self):
-        """Stop game over music loop"""
-        self.game_over_music_playing = False
-        time.sleep(0.1)  # Give thread time to stop
-        if self.game_over_music:
-            try:
-                self.game_over_music.stop()
-            except:
-                pass
-    
-    def stop_game_music(self):
-        """Stop game music and music thread"""
-        # Signal music thread to stop
-        self.music_thread_active = False
-        
-        # Stop the sound
-        if self.sound:
-            try:
-                self.sound.stop()
-            except:
-                pass
-        
-        # Give thread time to stop
-        time.sleep(0.05)
-    
-    def stop_all_music(self):
-        """Stop all music and audio to prevent bleeding"""
-        # Stop game music
-        self.stop_game_music()
-        # Stop menu music
-        self.stop_menu_music()
-        # Stop game over music
-        self.stop_game_over_music()
-        
-        # Stop pygame mixer channels
-        if PYGAME_AVAILABLE:
-            try:
-                pygame.mixer.stop()
-            except:
-                pass
-    
-    def play_game_over_jingle(self):
-        """Play game over jingle once"""
-        if self.game_over_jingle and self.settings and self.settings.music_enabled:
-            try:
-                # Stop ALL music first to prevent bleeding
-                self.stop_all_music()
-                
-                # Wait for audio to clear
-                time.sleep(0.1)
-                
-                # Play jingle (play_jingle_once already waits for completion)
-                play_jingle_once(self.game_over_jingle, self.game_over_jingle_duration)
-            except:
-                pass
-    
-    def pregenerate_level_music(self, level):
-        """Pre-generate music for a specific level and cache it"""
-        if level.name in self.music_cache:
-            return  # Already cached
-        
-        try:
-            music_gen = MusicGenerator(sample_rate=22050)
-            
-            if level.music_config:
-                level_music = generate_music_from_config(level.music_config, num_bars=8)
-                
-                melody_notes = level_music['melody']
-                bass_notes = level_music['bass']
-                bpm = level_music['bpm']
-                drum_pattern = level_music['drum_pattern']
-                groove = level_music['groove']
-                
-                beats_per_note = 0.5
-                num_notes = len(melody_notes)
-                beat_duration = 60.0 / bpm
-                duration = num_notes * beat_duration * beats_per_note
-            else:
-                melody_notes = [523, 659, 784, 659, 523, 392, 523, 659]
-                bass_notes = [262, 330, 262, 330, 262, 196, 262, 330]
-                bpm = 120
-                drum_pattern = None
-                groove = 'straight'
-                duration = 4.0
-            
-            mix_levels = self.sound_mixer.get_mix_levels()
-            
-            # Generate and cache the sound
-            sound = music_gen.create_pygame_sound(
-                melody_notes, 
-                bass_notes, 
-                duration=duration, 
-                bpm=bpm,
-                drum_pattern=drum_pattern,
-                mix_levels=mix_levels,
-                groove=groove
-            )
-            
-            self.music_cache[level.name] = (sound, duration)
-        except:
-            pass
-    
-    def generate_music(self):
-        """Load music from cache or generate if not cached"""
-        try:
-            # Stop any existing music thread first
-            self.stop_game_music()
-            
-            # Check cache first
-            if self.current_level.name in self.music_cache:
-                self.sound, duration = self.music_cache[self.current_level.name]
-            else:
-                # Generate on-demand if not cached
-                self.pregenerate_level_music(self.current_level)
-                if self.current_level.name in self.music_cache:
-                    self.sound, duration = self.music_cache[self.current_level.name]
-                else:
-                    return  # Generation failed
-            
-            def play_loop():
-                self.music_thread_active = True
-                while not self.game_state.game_over and self.music_thread_active:
-                    if self.game_state.music_enabled and self.sound:
-                        # Stop any previous playback to prevent stacking
-                        self.sound.stop()
-                        # Play the sound
-                        self.sound.play()
-                    time.sleep(duration)
-                self.music_thread_active = False
-            
-            music_thread = threading.Thread(target=play_loop, daemon=True)
-            music_thread.start()
-        except Exception as e:
-            # Silently fail if music generation fails
-            pass
     
     def check_level_transition(self):
-        """Check and handle level transitions with element-based effects"""
-        # Calculate transition window (50m before and after threshold)
-        transition_window = 50  # meters
+        """Check and handle level transitions"""
+        new_level = self.transition_manager.check_and_update_transition(
+            self.current_level,
+            self.settings,
+            self.music_manager,
+            self.sky_renderer,
+            self.scenery_renderer
+        )
         
-        # Get active level indices
-        active_indices = self.settings.get_active_levels() if self.settings else [0, 1, 2, 3]
-        if not active_indices:
-            return
-        
-        # Calculate current level index based on distance
-        if self.settings and self.settings.endless_mode:
-            total_length = len(active_indices) * self.settings.level_length
-            normalized_distance = self.game_state.distance % total_length
-            current_level_idx = int(normalized_distance / self.settings.level_length)
-        else:
-            current_level_idx = int(self.game_state.distance / self.settings.level_length) if self.settings else 0
-        
-        # Calculate next level index
-        next_level_idx = (current_level_idx + 1) % len(active_indices)
-        
-        # Get threshold for next level
-        if self.settings and self.settings.endless_mode:
-            total_length = len(active_indices) * self.settings.level_length
-            base_threshold = (current_level_idx + 1) * self.settings.level_length
-            normalized_distance = self.game_state.distance % total_length
-            distance_to_threshold = base_threshold - normalized_distance
-        else:
-            next_threshold = (current_level_idx + 1) * (self.settings.level_length if self.settings else 500)
-            distance_to_threshold = next_threshold - self.game_state.distance
-        
-        # Start transition when within window before threshold (only when approaching, not after passing)
-        if 0 <= distance_to_threshold <= transition_window and self.game_state.transition_stage == 'none' and not self.game_state.transition_triggered:
-            if current_level_idx < len(active_indices) - 1 or (self.settings and self.settings.endless_mode):
-                # Get next level and store it for the transition
-                next_level_index = active_indices[next_level_idx]
-                from level_specs import LEVELS
-                new_level = LEVELS[next_level_index]
-                
-                # Store the target level for this transition
-                self.transition_target_level = new_level
-                
-                self.game_state.transition_stage = 'horizon_out'
-                self.game_state.transition_progress = 0
-                self.game_state.transition_triggered = True  # Mark transition as triggered
-                self.game_state.old_level_color = self.current_level.sky_config.color_pair
-                self.game_state.new_level_color = new_level.sky_config.color_pair
-                self.previous_level = self.current_level
-        
-        # Handle transition stages
-        if self.game_state.transition_stage == 'horizon_out':
-            # Fade out horizon decorations and music
-            self.game_state.transition_progress += 0.1
-            
-            # Fade out music volume
-            if self.sound:
-                fade_volume = 1.0 - self.game_state.transition_progress
-                try:
-                    self.sound.set_volume(max(0.0, fade_volume))
-                except:
-                    pass
-            
-            if self.game_state.transition_progress >= 1.0:
-                self.game_state.transition_stage = 'color_fade'
-                self.game_state.transition_progress = 0
-                self.stop_game_music()
-        
-        elif self.game_state.transition_stage == 'color_fade':
-            # Gradient to new sky color
-            self.game_state.transition_progress += 0.08
-            if self.game_state.transition_progress >= 1.0:
-                # Use the stored target level from transition start
-                if hasattr(self, 'transition_target_level'):
-                    new_level = self.transition_target_level
-                else:
-                    # Fallback if not set
-                    new_level = get_level_for_distance(self.game_state.distance, self.settings)
-                
-                self.current_level = new_level
-                self.game_state.level_transition_message = f"ENTERING {new_level.name} ZONE!"
-                self.game_state.level_transition_timer = 60
-                
-                # Clear old objects
-                self.sky_renderer.clear_objects()
-                self.scenery_renderer.clear_objects()
-                
-                # Load music from cache (instant, no generation needed)
-                try:
-                    self.generate_music()
-                    if self.sound:
-                        self.sound.set_volume(0.0)  # Start silent, will fade in
-                except:
-                    pass
-                
-                self.game_state.transition_stage = 'horizon_in'
-                self.game_state.transition_progress = 0
-        
-        elif self.game_state.transition_stage == 'horizon_in':
-            # Fade in new horizon decorations and music
-            self.game_state.transition_progress += 0.1
-            
-            # Fade in music volume
-            if self.sound:
-                fade_volume = self.game_state.transition_progress
-                try:
-                    self.sound.set_volume(min(1.0, fade_volume))
-                except:
-                    pass
-            
-            if self.game_state.transition_progress >= 1.0:
-                self.game_state.transition_stage = 'none'
-                self.game_state.transition_progress = 0
-                self.game_state.transition_triggered = False  # Reset flag when transition completes
-                
-                # Ensure volume is at full
-                if self.sound:
-                    try:
-                        self.sound.set_volume(1.0)
-                    except:
-                        pass
+        if new_level:
+            self.current_level = new_level
     
     def update_game(self):
         """Update all game logic"""
@@ -558,33 +212,25 @@ class TerminalTourGame:
         except:
             pass
     
-    def pregenerate_all_music(self):
-        """Pre-generate music for all levels in background thread"""
-        def generate_all():
-            for level in LEVELS:
-                self.pregenerate_level_music(level)
-        
-        music_preload_thread = threading.Thread(target=generate_all, daemon=True)
-        music_preload_thread.start()
     
     def run(self):
         """Main game loop with menu system"""
         
         # Pre-generate all level music in background to prevent slowdowns
-        self.pregenerate_all_music()
+        self.music_manager.pregenerate_all_music(LEVELS)
         
         while True:
             # Ensure we're in the right mode for menu
             self.stdscr.nodelay(0)  # Wait for input in menu
             
             # Play menu music
-            self.play_menu_music()
+            self.music_manager.play_menu_music(self.settings)
             
             # Show main menu
             action, settings, music_changed = self.main_menu.show()
             
             # Stop menu music when starting game
-            self.stop_menu_music()
+            self.music_manager.stop_menu_music()
             
             if action == 'quit':
                 break
@@ -611,7 +257,7 @@ class TerminalTourGame:
                 self.game_state.distance = 0
                 
                 # Initialize music
-                self.init_music()
+                self.music_manager.play_level_music(self.current_level, self.game_state)
                 
                 # Set to non-blocking mode before countdown
                 self.stdscr.nodelay(1)
@@ -638,7 +284,7 @@ class TerminalTourGame:
                 self.render_game()
                 
                 # Handle input (including ESC for pause)
-                input_result = InputHandler.handle_input(self.stdscr, self.game_state, self.sound)
+                input_result = InputHandler.handle_input(self.stdscr, self.game_state, self.music_manager)
                 if input_result == False:
                     return False
                 elif input_result == 'pause':
@@ -659,9 +305,8 @@ class TerminalTourGame:
                             self.current_level = LEVELS[0]
                         self.game_state.distance = 0
                         
-                        # Reset music thread flag before regenerating music
-                        self.music_thread_active = False
-                        self.init_music()
+                        # Restart music
+                        self.music_manager.play_level_music(self.current_level, self.game_state)
                         
                         # Show countdown with game rendered
                         self.countdown_timer.show(render_callback=self.render_game)
@@ -679,16 +324,16 @@ class TerminalTourGame:
                 self.stdscr.nodelay(0)
                 
                 # Play game over jingle (stops all music internally)
-                self.play_game_over_jingle()
+                self.music_manager.play_game_over_jingle(self.settings)
                 
                 # Start game over music (jingle is finished now)
-                self.play_game_over_music()
+                self.music_manager.play_game_over_music(self.settings)
                 
                 # Game over menu
                 action = self.game_over_menu.show(self.game_state.score, self.game_state.distance)
                 
                 # Stop game over music
-                self.stop_game_over_music()
+                self.music_manager.stop_game_over_music()
                 
                 if action == 'restart':
                     # Reset game state
@@ -704,11 +349,8 @@ class TerminalTourGame:
                         self.current_level = LEVELS[0]
                     self.game_state.distance = 0
                     
-                    # Reset music thread flag before regenerating music
-                    self.music_thread_active = False
-                    
-                    # Regenerate music
-                    self.init_music()
+                    # Restart music
+                    self.music_manager.play_level_music(self.current_level, self.game_state)
                     
                     # Switch to non-blocking mode before countdown
                     self.stdscr.nodelay(1)
@@ -726,7 +368,7 @@ class TerminalTourGame:
     def _handle_pause(self):
         """Handle pause menu"""
         # Stop game music
-        self.stop_game_music()
+        self.music_manager.stop_game_music()
         
         # Show pause menu
         action = self.pause_menu.show()
@@ -734,7 +376,7 @@ class TerminalTourGame:
         # Resume game music if resuming
         if action == 'resume':
             # Restart music loop
-            self.init_music()
+            self.music_manager.play_level_music(self.current_level, self.game_state)
         
         return action
 

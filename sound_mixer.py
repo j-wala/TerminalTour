@@ -26,6 +26,17 @@ class SoundMixer:
             'drums': False,
         }
     
+    def load_from_settings(self, settings):
+        """Load mixer levels from GameSettings"""
+        if hasattr(settings, 'mixer_levels'):
+            for key in self.volumes.keys():
+                if key in settings.mixer_levels:
+                    self.volumes[key] = settings.mixer_levels[key]
+    
+    def save_to_settings(self, settings):
+        """Save mixer levels to GameSettings"""
+        settings.mixer_levels = self.get_mix_levels()
+    
     def show(self):
         """Display mixer menu and return if music should be regenerated"""
         original_volumes = self.volumes.copy()

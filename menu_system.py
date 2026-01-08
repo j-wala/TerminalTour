@@ -24,6 +24,9 @@ class GameSettings:
         self.endless_mode = False  # Loop levels infinitely
         self.randomize_levels = True  # Randomize level order on game start
         
+        # Audio mixer settings
+        self.mixer_levels = {'melody': 0.7, 'bass': 0.6, 'harmony': 0.5, 'drums': 0.4}
+        
         # Try to load saved settings
         self.load()
     
@@ -37,7 +40,8 @@ class GameSettings:
                 'enabled_levels': self.enabled_levels,
                 'level_order': self.level_order,
                 'endless_mode': self.endless_mode,
-                'randomize_levels': self.randomize_levels
+                'randomize_levels': self.randomize_levels,
+                'mixer_levels': self.mixer_levels
             }
             with open(self.SETTINGS_FILE, 'w') as f:
                 json.dump(settings_data, f, indent=2)
@@ -62,6 +66,7 @@ class GameSettings:
                 self.level_order = settings_data.get('level_order', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10])
                 self.endless_mode = settings_data.get('endless_mode', False)
                 self.randomize_levels = settings_data.get('randomize_levels', False)
+                self.mixer_levels = settings_data.get('mixer_levels', {'melody': 0.7, 'bass': 0.6, 'harmony': 0.5, 'drums': 0.4})
                 
                 # Ensure settings are compatible with current level count
                 from level_specs import LEVELS
@@ -301,9 +306,9 @@ class MainMenu:
                 # Control menu music based on setting
                 if self.game:
                     if self.settings.music_enabled:
-                        self.game.play_menu_music()
+                        self.game.music_manager.play_menu_music(self.settings)
                     else:
-                        self.game.stop_menu_music()
+                        self.game.music_manager.stop_menu_music()
             elif self.selected_option == 4:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)
@@ -320,9 +325,9 @@ class MainMenu:
                 # Control menu music based on setting
                 if self.game:
                     if self.settings.music_enabled:
-                        self.game.play_menu_music()
+                        self.game.music_manager.play_menu_music(self.settings)
                     else:
-                        self.game.stop_menu_music()
+                        self.game.music_manager.stop_menu_music()
             elif self.selected_option == 4:  # Difficulty
                 difficulties = ['easy', 'normal', 'hard']
                 idx = difficulties.index(self.settings.difficulty)
@@ -470,8 +475,15 @@ class MainMenu:
     def _show_mixer_menu(self):
         """Show sound mixer menu"""
         if self.sound_mixer:
+            # Load current settings into mixer
+            self.sound_mixer.load_from_settings(self.settings)
+            
             if self.sound_mixer.show():
                 self.music_changed = True
+                # Save mixer settings back to settings
+                self.sound_mixer.save_to_settings(self.settings)
+                # Auto-save settings
+                self.settings.save()
         return 'back'
 
 
