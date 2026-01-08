@@ -4,9 +4,15 @@ Handles pause state and pause music
 """
 
 import curses
-import pygame
-import numpy as np
-from jingles import generate_pause_music
+
+try:
+    import pygame
+    import numpy as np
+    from jingles import generate_pause_music
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    pygame = None
 
 
 class PauseMenu:
@@ -26,6 +32,8 @@ class PauseMenu:
     
     def init_pause_music(self):
         """Initialize calming pause music"""
+        if not AUDIO_AVAILABLE:
+            return
         try:
             self.pause_music, self.pause_music_duration = generate_pause_music()
         except Exception as e:
@@ -34,6 +42,8 @@ class PauseMenu:
     
     def start_pause_music(self):
         """Start playing pause music in loop"""
+        if not AUDIO_AVAILABLE:
+            return
         if self.pause_music and not self.pause_music_playing:
             self.pause_music_playing = True
             self.pause_music.play(loops=-1)  # Loop indefinitely

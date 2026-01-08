@@ -1,8 +1,13 @@
 #!/usr/bin/env python3
 import curses
 import time
-import pygame
 import threading
+
+try:
+    import pygame
+    PYGAME_AVAILABLE = True
+except ImportError:
+    PYGAME_AVAILABLE = False
 
 from level_specs import LEVELS, get_level_for_distance, PLAYER_CAR, TRAFFIC_CAR
 from rendering import SkyRenderer, SceneryRenderer, CarRenderer, RoadRenderer, BackgroundRenderer
@@ -34,10 +39,11 @@ class TerminalTourGame:
         self._init_colors()
         
         # Initialize pygame mixer FIRST (before any music generation)
-        try:
-            pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
-        except:
-            pass
+        if PYGAME_AVAILABLE:
+            try:
+                pygame.mixer.init(frequency=22050, size=-16, channels=2, buffer=512)
+            except:
+                pass
         
         # Initialize game components
         self.game_state = GameState(self.width, self.height)
@@ -218,10 +224,11 @@ class TerminalTourGame:
         self.stop_game_over_music()
         
         # Stop pygame mixer channels
-        try:
-            pygame.mixer.stop()
-        except:
-            pass
+        if PYGAME_AVAILABLE:
+            try:
+                pygame.mixer.stop()
+            except:
+                pass
     
     def play_game_over_jingle(self):
         """Play game over jingle once"""

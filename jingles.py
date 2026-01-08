@@ -2,14 +2,22 @@
 Musical jingles and menu music for Terminal Tour
 """
 
-import numpy as np
-import pygame
-from music_generator import MusicGenerator
-from music_theory import NOTES, Scale, ChordProgression
+try:
+    import numpy as np
+    import pygame
+    from music_generator import MusicGenerator
+    from music_theory import NOTES, Scale, ChordProgression
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    np = None
+    pygame = None
 
 
 def generate_menu_music():
     """Generate fast, energetic racing-themed menu music"""
+    if not AUDIO_AVAILABLE:
+        return None, 0
     music_gen = MusicGenerator(sample_rate=22050)
     
     # Fast, driving melody in E Major (racing energy!)
@@ -64,6 +72,8 @@ def generate_menu_music():
 
 def generate_game_over_jingle():
     """Generate dramatic game over jingle - descending chromatic crash"""
+    if not AUDIO_AVAILABLE:
+        return None, 0
     music_gen = MusicGenerator(sample_rate=22050)
     
     # Dramatic descending chromatic run (classic "game over" sound)
@@ -128,6 +138,8 @@ def generate_game_over_jingle():
 
 def generate_game_over_music():
     """Generate reflective game over music loop (not just jingle)"""
+    if not AUDIO_AVAILABLE:
+        return None, 0
     music_gen = MusicGenerator(sample_rate=22050)
     
     # Melancholy but flowing melody in A Minor (4 bars)
@@ -190,6 +202,8 @@ def generate_game_over_music():
 
 def generate_pause_music():
     """Generate calm, ambient pause music"""
+    if not AUDIO_AVAILABLE:
+        return None, 0
     music_gen = MusicGenerator(sample_rate=22050)
     
     # Gentle, calming melody
@@ -233,6 +247,8 @@ def generate_pause_music():
 
 def play_jingle_once(sound, duration):
     """Play a jingle sound once"""
+    if not AUDIO_AVAILABLE or sound is None:
+        return
     import time
     try:
         sound.play()

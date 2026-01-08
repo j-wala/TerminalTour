@@ -3,8 +3,14 @@ Enhanced procedural music generation for Terminal Tour
 Generates chiptune music with melody, bass, harmony, and drums
 """
 
-import numpy as np
-import pygame
+try:
+    import numpy as np
+    import pygame
+    AUDIO_AVAILABLE = True
+except ImportError:
+    AUDIO_AVAILABLE = False
+    np = None
+    pygame = None
 
 
 class MusicGenerator:
